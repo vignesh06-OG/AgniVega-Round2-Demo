@@ -5,6 +5,7 @@
  * Large touch targets (min 80px), icon + local-language name, color coding.
  * Falls back gracefully to a scrollable grid for 10+ crops.
  */
+import React from "react";
 import type { Crop } from "@/lib/krishi/types";
 import type { Lang } from "@/lib/krishi/i18n";
 import { cropName } from "@/lib/krishi/i18n";
