@@ -1,0 +1,37 @@
+services:
+  web:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Optional Python reference backend (FastAPI + OR-Tools). Enabled with:
+  #   docker compose --profile reference up
+  backend:
+    profiles: ["reference"]
+    image: python:3.11-slim
+    working_dir: /srv
+    command: >
+      bash -lc "pip install -q -r requirements.txt &&
+                uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/srv
+    ports:
+      - "8000:8000"

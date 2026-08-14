@@ -1,0 +1,214 @@
+Presentation has 6 slides.
+
+--- Slide 1 ---
+
+SMART KOPARGOAN HACKATHON
+Problem Statement ID – SKH041
+Problem Statement Title – AI-Powered Agricultural Logistics Platform for Farmers
+Theme – Agriculture / Transportation
+PS Category – Software
+Team ID – [INSERT TEAM ID]
+Team Name (Registered on portal) – [INSERT TEAM NAME]
+
+
+
+SMART KRISHI-YATRA AI
+
+
+sanjivani.edu.in
+skh.sanjivaniuniversity.com
+SMART KRISHI-YATRA AI
+Market-Aware Agri-Logistics Operating SystemFrom Farm Gate to Best Realization
+
+--- Slide 2 ---
+
+
+
+SMART KRISHI-YATRA AI
+
+2
+
+[YOUR TEAM NAME]
+
+
+sanjivani.edu.in
+skh.sanjivaniuniversity.com
+A market-aware logistics platform that coordinates produce, vehicles and destinations to maximize Expected Net Realization (ENR).
+FARMER
+CARGO
+MARKET
+DATA
+VEHICLE
+DATA
+ROUTE +
+TIME
+RISK /
+DELAY
+MARKET-AWARE LOGISTICS DECISION ENGINE
+ENR + POOLING + OPTIMIZATION
+HOW IT ADDRESSES THE PROBLEM
+• Pools compatible LTL harvest loads to reduce per-unit freight.
+• Compares destinations using expected net realization, not price alone.
+• Matches cargo to vehicle capacity and route constraints.
+• Re-evaluates decisions when delay/risk conditions change.
+INNOVATION & UNIQUENESS
+• ENR engine: market value minus logistics and expected quality-loss costs.
+• Deterministic CVRP-based pooling and vehicle assignment.
+• Voice-first interaction with local-language support.
+• Offline-tolerant workflow for patchy rural connectivity.
+• One platform for Farmer • Driver • Fleet • Admin.
+Our differentiation: the agricultural decision layer combining MARKET + TRANSPORT + TIME + QUALITY + RISK → ENR.
+
+--- Slide 3 ---
+
+
+
+2
+
+[YOUR TEAM NAME]
+
+
+
+TECHNICAL APPROACH
+sanjivani.edu.in
+skh.sanjivaniuniversity.com
+ARCHITECTURE & DECISION PIPELINE
+INPUTS  →  Farmer Cargo | Market Data | Vehicle Capacity | Location | Route/Time | Risk/Delay
+MARKET-AWARE LOGISTICS DECISION ENGINE
+ENR CALCULATION  •  POOLING  •  CVRP-BASED OPTIMIZATION  •  CONSTRAINTS  •  ROUTING
+BEST
+MARKET
+BEST
+VEHICLE
+BEST
+LOAD
+BEST
+ROUTE
+DISPATCH
+TECHNOLOGY STACK
+• React + TypeScript + Vite
+• Tailwind CSS + React-Leaflet
+• Web Speech API
+• Vitest + Playwright
+• Self-hostable / local + VPS
+CURRENT OPTIMIZATION
+• Deterministic TypeScript CVRP-based optimizer
+• Farmer pooling + capacity constraints
+• Load allocation + vehicle assignment
+• Routing with OSRM/fallback where available
+• No paid API required for core demo
+PRODUCTION PATH
+• Google OR-Tools as optional optimization backend
+• PostgreSQL for persistent backend data
+• Redis where queues/caching are justified
+• Live market/weather/vehicle providers
+• Solver-agnostic architecture
+Accuracy note: the prototype uses deterministic optimization; OR-Tools is a production option, not claimed as currently integrated unless verified in the repository.
+
+--- Slide 4 ---
+
+
+
+2
+
+[YOUR TEAM NAME]
+
+
+FEASIBILITY AND VIABILITY
+
+sanjivani.edu.in
+skh.sanjivaniuniversity.com
+FEASIBILITY, RISKS & MITIGATION
+FEASIBLE NOW
+• Web/PWA-based client
+• Offline-tolerant local persistence
+• OpenStreetMap + Leaflet mapping
+• OSRM routing with fallback
+• Deterministic CVRP prototype
+• Browser voice interaction
+• Local + VPS deployment
+• Modular provider architecture
+CHALLENGES / RISKS
+• Unstable rural connectivity
+• Incomplete or delayed market data
+• Voice accuracy across dialects/noise
+• Vehicle availability can change
+• Large-scale optimization complexity
+• User adoption / digital literacy
+MITIGATION
+• Offline queue + sync when online
+• Source validation + timestamps + fallback
+• Speech + confirmation + manual input
+• Recalculate ENR when conditions change
+• OR-Tools / dedicated solver at scale
+• Voice-first + minimal input workflows
+Feasibility principle: prove the core workflow locally first, then replace individual providers with live services without rewriting the decision layer.
+
+--- Slide 5 ---
+
+
+
+2
+
+[YOUR TEAM NAME]
+
+IMPACT AND BENEFITS
+
+
+sanjivani.edu.in
+skh.sanjivaniuniversity.com
+IMPACT: BETTER LOGISTICS, BETTER FARMER REALIZATION
+MANDI PRICE  ≠  FARMER REALIZATION
+Sale Value − Transport − Waiting/Delay − Expected Quality Loss − Other Deductions = EXPECTED NET REALIZATION
+FARMERS
+• Lower freight per unit through pooling
+• Compare markets using ENR
+• Voice-first booking
+• Reduced coordination & delay
+DRIVERS
+• Pooled load assignments
+• Pickup sequence
+• Route guidance
+• Trip status & utilization
+FLEET OPERATORS
+• Vehicle utilization
+• Driver allocation
+• Load assignment
+• Dispatch visibility
+AGRICULTURAL ECOSYSTEM
+• Faster produce movement
+• Better market connectivity
+• Reduced avoidable delays/loss
+• Improved coordination
+The platform optimizes for what the farmer finally realizes — not merely what the market advertises.
+Prototype impact is demonstrated through scenario-based simulation; field impact requires validation with real farmer, mandi and transport data.
+
+--- Slide 6 ---
+
+
+
+2
+
+[YOUR TEAM NAME]
+
+
+RESEARCH  AND REFERENCES
+
+sanjivani.edu.in
+skh.sanjivaniuniversity.com
+RESEARCH, REFERENCES & OPEN-SOURCE COMPONENTS
+ALGORITHMS / TECHNOLOGY
+• CVRP — vehicle-capacity-aware routing model; reference: Google OR-Tools Vehicle Routing.
+• OpenStreetMap — open geographic/map data.
+• OSRM — open-source road-network routing engine.
+• Leaflet — interactive map visualization library.
+• Web Speech API — browser speech recognition/synthesis.
+• Vitest / Playwright — unit and end-to-end testing.
+AGRICULTURAL / DOMAIN RESEARCH
+• FAO — post-harvest loss and food-supply-chain research.
+• Government agricultural market / mandi data sources where applicable.
+• Agricultural logistics research on transport cost, perishability and market access.
+• NABARD / rural infrastructure research for rural logistics context.
+• Use verified papers and official data sources in the final submission.
+OPEN-SOURCE STRATEGY  →  OSM (data)  →  OSRM (routing)  →  Leaflet (map)  →  CVRP (prototype optimizer)  →  OR-Tools (production option)
+Sources: developers.google.com/optimization  •  openstreetmap.org  •  project-osrm.org  •  leafletjs.com  •  developer.mozilla.org/Web/API/Web_Speech_API
