@@ -1,140 +1,172 @@
 <div align="center">
   <img src="public/assets/readme_banner_3d.jpg" alt="Smart Krishi-Yatra AI 3D Banner" width="100%" style="border-radius: 12px; box-shadow: 0px 10px 20px rgba(0,0,0,0.2);" />
 
-  <h1 align="center">Smart Krishi-Yatra AI</h1>
+  <h1 align="center">AgniVega</h1>
 
   <p align="center">
-    <strong>Market-Aware Agricultural Logistics Operating System</strong><br/>
-    Built for Maharashtra's smallholder farmers to maximize <strong>Expected Net Realization</strong>.
+    <strong>An agricultural logistics operating system that unites market intelligence, capacity pooling, and routing to guarantee the highest net return for farmers.</strong>
   </p>
 
   <p align="center">
-    <a href="https://github.com/takshalchaudhari/AgniVega"><img src="https://img.shields.io/badge/Team-Agnivega-4b6845?style=for-the-badge&logo=github&logoColor=white" alt="Team Agnivega"></a>
-    <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19"></a>
-    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
-    <a href="https://tanstack.com/router/latest"><img src="https://img.shields.io/badge/TanStack-Router-FF4154?style=for-the-badge&logo=react&logoColor=white" alt="TanStack"></a>
+    <a href="http://localhost:8080/auth"><strong>Live Demo</strong></a> · 
+    <a href="https://github.com/vignesh06-OG/AgniVega-Round2-Demo"><strong>GitHub</strong></a> · 
+    <a href="./docs/ARCHITECTURE.md"><strong>Documentation</strong></a>
+  </p>
+
+  <p align="center">
+    <img src="https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge" alt="Build Status">
+    <img src="https://img.shields.io/badge/Tests-79%2F79%20Passing-brightgreen?style=for-the-badge" alt="Test Status">
+    <img src="https://img.shields.io/badge/E2E-Verified-blue?style=for-the-badge" alt="E2E Status">
   </p>
 </div>
 
 ---
 
-<div align="center">
-  <h3><em>The highest mandi price is NOT necessarily the highest farmer realization.</em></h3>
-</div>
+## 1. The Problem
 
-If a farmer chases a high price far away, the transport cost and spoilage risk might wipe out their profits. Our system determines **WHERE, WHEN, and HOW** a farmer should transport their produce to ensure they take home the most money.
+The traditional agricultural supply chain is operationally blind. 
+Farmers rely entirely on **gross mandi prices** when deciding where to sell, completely ignoring the invisible costs that eat their profits:
+- Fragmented, un-pooled transport costing up to 40% more.
+- Poor vehicle capacity utilization (trucks driving half-empty).
+- Spoilage risk due to unknown delays and APMC gate queues.
+- A complete lack of visibility after the truck leaves the farm.
 
----
+**The result:** A farmer might choose a market 50km away because the price is ₹2 higher, only to lose ₹5 in transport and spoilage.
 
-## 🚀 The Innovation: Expected Net Realization (ENR)
+## 2. What AgniVega Actually Does
 
-Our system replaces fragmented guesswork with a unified economic calculation:
-
-> **MARKET + TRANSPORT + TIME + QUALITY + RISK → EXPECTED NET REALIZATION**
-
-<details open>
-<summary><b>🔍 Click to Expand: How ENR is Calculated</b></summary>
-<br>
-
-1. **Market Price Prediction:** We pull real-time crop pricing across mandis.
-2. **Deterministic CVRP Optimizer:** We calculate the freight cost by pooling neighboring farmers' loads to distribute freight costs efficiently.
-3. **Transit & Queue Modeling:** We calculate dynamic transit times considering toll delays and APMC gate queues.
-4. **Spoilage Risk:** We dynamically discount expected payout if a perishable crop approaches its spoilage threshold during transit.
-
-</details>
-
----
-
-## 🏗️ 3D System Architecture
-
-<div align="center">
-  <img src="public/assets/architecture_3d.jpg" alt="3D Architecture Diagram" width="90%" style="border-radius: 12px; margin: 20px 0;" />
-</div>
-
-<details>
-<summary><b>⚙️ Click to Expand: Technical Stack Details</b></summary>
-<br>
-
-The platform operates using a tiered, offline-capable architecture suitable for rural connectivity environments.
-
-- **Frontend:** PWA built with React 19, TypeScript, and Vite.
-- **State Management:** TanStack Query & Router for robust, offline-tolerant data caching.
-- **Styling:** Tailwind CSS & Radix UI primitives with a modern glassmorphic 3D design system.
-- **Routing Engine (Tiered):**
-  1.  _Tier 1 (Preferred)_: OSRM (Open Source Routing Machine) over network for precise road distance.
-  2.  _Tier 2 (Fallback)_: Offline deterministic geospatial approximation (Haversine formula).
-- **Backend / Calculation Engine:** Server Functions via TanStack Start, executing complex routing and economic math without heavy client-side processing.
-
-</details>
-
----
-
-## 🔄 Interactive Flow: How It Works
+AgniVega orchestrates the entire decision-to-dispatch loop in one platform. We shift the farmer's decision from "highest gross price" to **"highest expected net amount in bank."**
 
 ```mermaid
-graph TD
-    A([🌾 Farmer Speaks Intent via IVR]) --> B{Voice AI Parses Data}
-    B -->|Crop, Weight, Location| C[ENR Calculation Engine]
-
-    C --> D(1. Fetch Live Mandi Prices)
-    C --> E(2. Find Nearby LTL Loads to Pool)
-    C --> F(3. Determine Best Vehicle/Route)
-    C --> G(4. Subtract Spoilage & Risk)
-
-    D --> H((Highest Net Profit Selected))
-    E --> H
-    F --> H
-    G --> H
-
-    H --> I([🚚 Dispatch QR Handover Token])
-
-    style A fill:#4b6845,stroke:#333,stroke-width:2px,color:#fff
-    style H fill:#FF4154,stroke:#333,stroke-width:2px,color:#fff
-    style I fill:#3178C6,stroke:#333,stroke-width:2px,color:#fff
+flowchart TD
+    A[Farmer Input: Crop & Qty] --> B[Quality Analysis]
+    B --> C[Market Intelligence Engine]
+    C --> D[Logistics Cost & Pooling Engine]
+    D --> E[Multi-Vehicle Allocation]
+    E --> F[Expected Net Amount Comparison]
+    F --> G[Farmer Market Override/Selection]
+    G --> H[Booking Hold & Capacity Lock]
+    H --> I[Payment]
+    I --> J[Dispatch & Tracking]
 ```
 
----
+This is **not** just a truck booking app or a mandi price aggregator. It is a closed-loop operating system where market economics directly control logistics dispatch.
 
-## 📦 Installation & Setup
+## 3. Why This Is Different
 
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/takshalchaudhari/AgniVega.git
-   cd AgniVega
-   ```
-
-2. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Start the Development Server:**
-   ```bash
-   npm run dev
-   ```
-   _The application will run on `http://localhost:5173`._
+| Traditional Approach | AgniVega Operating System |
+|---|---|
+| **Gross mandi price** | **Expected net amount** |
+| Manual truck search | Capacity-aware vehicle allocation |
+| Single truck assumption | Multi-vehicle dispatch pooling |
+| Static destination | Market comparison + farmer override |
+| Unknown transport cost | Logistics cost breakdown upfront |
+| No booking protection | 30-minute editable capacity hold |
+| No visibility | Dispatch + simulated live tracking |
+| Driver contact sharing | Platform-mediated operational communication |
 
 ---
 
-## 🌐 Demo Scenarios & Features
+## 4. Product Walkthrough
 
-### 1. Farmer Portal
+### 🚜 1. The Farmer Workflow
 
-Farmers can input their crop, weight, and location. The engine instantly computes pooled transport options, evaluates spoilage risk, and ranks the output strictly by net realization.
+<div align="center">
+  <img src="docs/screenshots/farmer/farmer-dashboard.png" width="48%" />
+  <img src="docs/screenshots/farmer/crop-selection.png" width="48%" />
+  <p><em>(Left) The bilingual farmer dashboard. (Right) Touch-friendly, icon-based crop selection covering 21 crops—no complex dropdowns required.</em></p>
+</div>
 
-### 2. Admin Scenario Injection
+<div align="center">
+  <img src="docs/screenshots/farmer/quality-analysis.png" width="48%" />
+  <img src="docs/screenshots/farmer/market-comparison.png" width="48%" />
+  <p><em>(Left) Quality analysis with an honest manual fallback when AI API is unavailable. (Right) Market comparison explicitly calculating the Expected Net Amount and hiding complex "ENR" jargon.</em></p>
+</div>
 
-Logistics is volatile. Administrators can inject real-time delays (e.g., highway closures, vehicle breakdowns) into the system. The platform reacts by instantly recalculating transit times, escalating spoilage risks, and re-ranking the best mandi for the farmer to avert total loss.
+### 📦 2. Capacity & Payment
+
+<div align="center">
+  <img src="docs/screenshots/booking/booking-hold.png" width="48%" />
+  <img src="docs/screenshots/booking/payment.png" width="48%" />
+  <p><em>(Left) A 30-minute booking hold locking in fleet capacity. (Right) Payment modal clearly separating the Logistics Transport Fee from the Expected Crop Value.</em></p>
+</div>
+
+### 🚚 3. Dispatch & Fleet
+
+<div align="center">
+  <img src="docs/screenshots/driver/driver-dashboard.png" width="48%" />
+  <img src="docs/screenshots/fleet/fleet-dashboard.png" width="48%" />
+  <p><em>(Left) Driver dashboard showing assigned pooled loads and distances. (Right) Fleet console for capacity and diagnostic management.</em></p>
+</div>
+
+### 🏢 4. Admin Control Tower
+
+<div align="center">
+  <img src="docs/screenshots/admin/admin-control-tower.png" width="80%" />
+  <p><em>Control tower for macro-visibility, KYC governance, and live shipment tracking.</em></p>
+</div>
 
 ---
 
-## 📜 Disclaimer & Legal
+## 5. Technical Documentation
 
-- The routing algorithms provided in this prototype are based on a **Deterministic CVRP-based demonstration optimizer** using nearest-neighbor and 2-opt heuristics.
-- Please review our [Privacy Policy](./PRIVACY_POLICY.md) and [Terms of Service](./TERMS_OF_SERVICE.md) for data handling specifics.
+AgniVega is an offline-capable, SSR-based logistics application utilizing TanStack Start. 
+Dive deep into our engineering architecture and logic:
 
-## 📄 License & Third-Party Code
+- [Architecture & Tech Stack](./docs/ARCHITECTURE.md)
+- [Decision & Pricing Engine](./docs/DECISION_ENGINE.md)
+- [Booking State Machine](./docs/BOOKING_STATE_MACHINE.md)
+- [Multi-Vehicle Dispatch Logic](./docs/MULTI_VEHICLE_DISPATCH.md)
+- [AI Transparency (Live vs. Simulated)](./docs/AI_TRANSPARENCY.md)
+- [Testing Strategy](./docs/TESTING.md)
+- [Security & Role Isolation](./SECURITY.md)
 
-See [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md) for details on the open-source libraries, UI components, and geospatial systems used in this project.
+## 6. Setup & Installation
+
+Getting the product running is dead simple.
+
+```bash
+git clone https://github.com/vignesh06-OG/AgniVega-Round2-Demo.git
+cd AgniVega-Round2-Demo
+npm install
+npm run dev
+```
+
+### Environment Variables
+Copy the `.env.example` file to `.env` and fill in the placeholders (optional for fallback mode):
+```bash
+cp .env.example .env
+```
+
+## 7. Feature Matrix
+
+| Capability | Status |
+|---|---|
+| Farmer booking workflow | ✅ |
+| Bilingual Crop catalogue (21 crops) | ✅ |
+| Quality analysis (AI / Manual fallback) | ✅ |
+| Market comparison (Net amount calc) | ✅ |
+| Multi-vehicle dispatch matching | ✅ |
+| Vehicle capacity constraints | ✅ |
+| 30-min Booking hold | ✅ |
+| Logistics Payment | ✅ |
+| Tracking & Dashboard updates | ✅ |
+| Driver route dashboard | ✅ |
+| Fleet capacity dashboard | ✅ |
+| Admin control tower | ✅ |
+| Strict Role Isolation | ✅ |
+
+## 🚀 8. Live Demo Golden Path
+
+Test the product yourself at `http://localhost:8080/auth`. 
+
+1. **Login as Farmer** (Click the "Farmer" button).
+2. Click **New AI Dispatch**.
+3. Select **Soybean** and enter `12000` kg (to trigger multi-vehicle allocation).
+4. Fill out quality parameters and proceed.
+5. Review the **Market Comparison** and see how the transport fee dictates the highest net return.
+6. Select a market and observe the **Vehicle Allocation** split the 12,000kg load across multiple trucks.
+7. Confirm the **Booking Hold** (starts a 30-minute timer).
+8. Complete the **Payment**.
+9. Verify the confirmed booking on your dashboard.
+10. Logout, and login as **Driver** to see the active dispatch!
