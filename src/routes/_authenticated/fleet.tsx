@@ -24,6 +24,7 @@ import { getReferenceData } from "@/lib/krishi/krishi.functions";
 export const Route = createFileRoute("/_authenticated/fleet")({
   beforeLoad: ({ context }) => {
     if (context.user.role !== "fleet" && context.user.role !== "admin") {
+      toast.error("Unauthorized role access.");
       throw redirect({ to: "/" });
     }
   },

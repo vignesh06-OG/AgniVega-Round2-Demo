@@ -23,7 +23,7 @@ const CONFIG: Record<DataStatus, { text: string; className: string; title: strin
     text: "🔵 COMPUTED",
     className:
       "inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-800 ring-1 ring-blue-300",
-    title: "Deterministically computed from the ENR formula.",
+    title: "Deterministically computed.",
   },
   USER_INPUT: {
     text: "⚪ USER INPUT",

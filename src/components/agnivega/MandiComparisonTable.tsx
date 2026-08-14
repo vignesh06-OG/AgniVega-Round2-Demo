@@ -23,7 +23,7 @@ export function MandiComparisonTable() {
             <tr>
               <td className="px-4 py-3 font-medium">Core Metric</td>
               <td className="px-4 py-3 bg-primary/5 font-semibold text-primary">
-                Farmer Net Realization (ENR)
+                {lang === "en" ? "Estimated Net Amount" : "अपेक्षित निव्वळ रक्कम"}
               </td>
               <td className="px-4 py-3">Gross Price/kg</td>
               <td className="px-4 py-3">Transport Time</td>

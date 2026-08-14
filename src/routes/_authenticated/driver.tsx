@@ -15,6 +15,7 @@ import { listAvailableLoads, acceptLoad, listMyTrips, updateTripStatus } from "@
 export const Route = createFileRoute("/_authenticated/driver")({
   beforeLoad: ({ context }) => {
     if (context.user.role !== "driver" && context.user.role !== "admin") {
+      toast.error("Unauthorized role access.");
       throw redirect({ to: "/" });
     }
   },

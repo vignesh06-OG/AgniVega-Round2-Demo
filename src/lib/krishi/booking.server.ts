@@ -169,3 +169,12 @@ export const confirmPayment = createServerFn({ method: "POST" })
     record.expiresAt = null; // No longer expires
     return record;
   });
+
+export const getBookingsByFarmer = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ farmerId: z.string() }).parse(input))
+  .handler(async ({ data }) => {
+    expireOldBookings();
+    return Object.values(BOOKINGS)
+      .filter(b => b.farmerId === data.farmerId)
+      .sort((a, b) => b.createdAt - a.createdAt);
+  });

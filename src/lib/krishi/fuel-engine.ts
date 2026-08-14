@@ -149,7 +149,7 @@ export function spoilageRisk(
 
 export function utilisation(weightKg: number, payloadKg: number): number {
   if (payloadKg <= 0) return 0;
-  return Math.min(2, weightKg / payloadKg);
+  return Math.min(1, weightKg / payloadKg);
 }
 
 export function isOverloaded(weightKg: number, payloadKg: number): boolean {

@@ -31,6 +31,10 @@ export interface Crop {
   spoilage_hours: number;
   crate_kg: number;
   perishable: boolean;
+  category: "cereal" | "pulse" | "vegetable" | "fruit" | "cash_crop" | "spice" | "oilseed";
+  season: "Kharif" | "Rabi" | "Zaid" | "Year-round";
+  isHighDemand?: boolean;
+  qualityParams: string[];
 }
 
 export interface MandiPrice {
@@ -78,7 +82,7 @@ export interface MandiOption {
     spoilageLoss: number;
     netPayout: number;
     vehicle: string;
-    vehicles: { id: string; name: string; allocatedKg: number }[];
+    vehicles: { id: string; name: string; allocatedKg: number; maxCapacityKg: number }[];
     poolPartners: number;
     utilisationPercent: number;
     detourMinutes: number;
@@ -89,7 +93,7 @@ export interface MandiOption {
     spoilageLoss: number;
     netPayout: number;
     vehicle: string;
-    vehicles: { id: string; name: string; allocatedKg: number }[];
+    vehicles: { id: string; name: string; allocatedKg: number; maxCapacityKg: number }[];
     utilisationPercent: number;
   };
   savings: number;

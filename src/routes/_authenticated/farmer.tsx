@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { createBookingHold, getBooking, confirmPayment, getVehicleCapacity, cancelBooking } from "@/lib/krishi/booking.server";
+import { createBookingHold, getBooking, confirmPayment, getVehicleCapacity, cancelBooking, getBookingsByFarmer } from "@/lib/krishi/booking.server";
 import { PaymentModal } from "@/components/agnivega/PaymentModal";
 
 import { BrandHeader } from "@/components/agnivega/BrandHeader";
@@ -31,7 +31,11 @@ import {
   Globe,
   Lock,
   Edit2,
-  AlertTriangle
+  AlertTriangle,
+  Wallet,
+  FileText,
+  LifeBuoy,
+  Plus
 } from "lucide-react";
 
 import { getReferenceData, calculateOptions } from "@/lib/krishi/krishi.functions";
@@ -40,13 +44,13 @@ import { rupees } from "@/lib/krishi/constants";
 import type { CalculationResult, MandiOption } from "@/lib/krishi/types";
 
 // New Components
-import { QualityForm, type QualityData } from "@/components/agnivega/QualityForm";
-import { AIUploadMock, type AIResult } from "@/components/agnivega/AIUploadMock";
+import { AIUploadMock, type QualityData } from "@/components/agnivega/AIUploadMock";
 import { SupportTicketModal } from "@/components/agnivega/SupportTicketModal";
 
 export const Route = createFileRoute("/_authenticated/farmer")({
   beforeLoad: ({ context }) => {
     if (context.user.role !== "farmer" && context.user.role !== "admin") {
+      toast.error("Unauthorized role access.");
       throw redirect({ to: "/" });
     }
   },
@@ -68,7 +72,7 @@ const SPOILAGE_STYLES: Record<string, { bg: string; text: string }> = {
   critical: { bg: "bg-red-100 text-red-800", text: "text-red-700" },
 };
 
-type FlowState = "DRAFT" | "ANALYZING" | "OPTIONS_READY" | "CONFIRMED_EDITABLE" | "LOCKED";
+type FlowState = "DASHBOARD" | "DRAFT" | "ANALYZING" | "OPTIONS_READY" | "CONFIRMED_EDITABLE" | "LOCKED";
 
 const DICT = {
   en: {
@@ -98,25 +102,39 @@ const DICT = {
     editBtn: "बुकिंग बदला",
     countdown: "बदलण्यासाठी वेळ:",
     rebookBtn: "पुन्हा बुकिंगची विनंती करा",
+    dashboard: "डॅशबोर्ड",
+    newDispatch: "नवीन बुकिंग",
+    activeBookings: "सक्रिय बुकिंग",
+    walletBalance: "वॉलेट शिल्लक",
+    support: "मदत आणि सपोर्ट",
+    noBookings: "कोणतेही सक्रिय बुकिंग नाही",
   }
 };
 
 function FarmerFlow() {
   const refFn = useServerFn(getReferenceData);
   const calcFn = useServerFn(calculateOptions);
+  const getBookingsFn = useServerFn(getBookingsByFarmer);
 
   const reference = useQuery({
     queryKey: ["krishi-reference"],
     queryFn: () => refFn({}),
   });
 
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["farmer-bookings", "FARMER-123"],
+    queryFn: () => getBookingsFn({ data: { farmerId: "FARMER-123" } }),
+    refetchInterval: 5000,
+  });
+
   const [lang, setLang] = useState<"en" | "mr">("en");
   const t = DICT[lang];
 
-  const [flowState, setFlowState] = useState<FlowState>("DRAFT");
+  const [flowState, setFlowState] = useState<FlowState>("DASHBOARD");
   const [countdown, setCountdown] = useState<number>(0);
   const [bookingRecord, setBookingRecord] = useState<any>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [vehicleCap, setVehicleCap] = useState<{total: number, booked: number} | null>(null);
   const createHoldFn = useServerFn(createBookingHold);
   const confirmPaymentFn = useServerFn(confirmPayment);
@@ -128,9 +146,10 @@ function FarmerFlow() {
   const [quantity, setQuantity] = useState("10");
   const [inputError, setInputError] = useState<string | null>(null);
   
-  const [quality, setQuality] = useState<QualityData>({ moisture: "medium", grade: "good", damage: "low" });
-  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [aiResult, setAiResult] = useState<QualityData | null>(null);
   const [consentGiven, setConsentGiven] = useState(false);
+
+  const selectedCropObj = reference.data?.crops?.find(c => c.id === selectedCropId);
 
   // Results State
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -202,29 +221,106 @@ function FarmerFlow() {
           </Button>
         </div>
 
-        {/* ── Step indicator ── */}
-        <div className="flex items-center justify-between mb-8">
-          {[
-            { stateReq: ["DRAFT", "ANALYZING"], label: t.step1 },
-            { stateReq: ["OPTIONS_READY"], label: t.step2 },
-            { stateReq: ["CONFIRMED_EDITABLE", "LOCKED"], label: t.step3 },
-          ].map((s, i) => {
-            const isActive = s.stateReq.includes(flowState);
-            const isPast = ["OPTIONS_READY", "CONFIRMED_EDITABLE", "LOCKED"].includes(flowState) && i < 2;
-            const highlighted = isActive || isPast;
-            return (
-              <div key={i} className="contents">
-                {i > 0 && <div className={`h-1 flex-1 mx-4 ${highlighted ? "bg-primary" : "bg-muted"}`} />}
-                <div className={`flex items-center gap-2 ${highlighted ? "text-primary" : "text-muted-foreground"}`}>
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold ${highlighted ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                    {i + 1}
-                  </div>
-                  <span className="font-semibold hidden sm:inline">{s.label}</span>
-                </div>
+        {/* ══════════ DASHBOARD ══════════ */}
+        {flowState === "DASHBOARD" && (
+          <div className="space-y-6 animate-in fade-in">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold">{t.dashboard}</h1>
+              <Button onClick={() => setFlowState("DRAFT")} size="lg">
+                <Plus className="mr-2 h-5 w-5" /> {t.newDispatch}
+              </Button>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-6 space-y-2">
+                  <Wallet className="h-8 w-8 text-primary" />
+                  <p className="text-sm text-muted-foreground">{t.walletBalance}</p>
+                  <p className="text-3xl font-bold tabular-nums">₹4,250</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-50 border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => setSupportOpen(true)}>
+                <CardContent className="p-6 space-y-2">
+                  <LifeBuoy className="h-8 w-8 text-blue-600" />
+                  <p className="text-sm text-blue-800">{t.support}</p>
+                  <p className="font-semibold text-blue-900">0 Active Tickets</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="p-6 space-y-2">
+                  <FileText className="h-8 w-8 text-green-600" />
+                  <p className="text-sm text-green-800">{t.activeBookings}</p>
+                  <p className="text-3xl font-bold tabular-nums text-green-900">{bookings.length}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <h2 className="text-xl font-bold mt-8 mb-4">{t.activeBookings}</h2>
+            {bookings.length === 0 ? (
+              <div className="text-center p-12 border-2 border-dashed rounded-xl bg-muted/50">
+                <Truck className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground font-medium">{t.noBookings}</p>
+                <Button variant="outline" className="mt-4" onClick={() => setFlowState("DRAFT")}>
+                  {t.newDispatch}
+                </Button>
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              <div className="space-y-4">
+                {bookings.map((b: any) => (
+                  <Card key={b.bookingId} className="cursor-pointer hover:border-primary transition-colors" onClick={() => {
+                    setBookingRecord(b);
+                    setFlowState(b.status === "BOOKING_HELD" ? "CONFIRMED_EDITABLE" : "LOCKED");
+                  }}>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                          <Truck className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">{b.destination} <span className="text-muted-foreground font-normal ml-2">({b.quantityKg} kg)</span></p>
+                          <div className="flex gap-2 mt-1">
+                            <Badge variant="outline" className="text-[10px]">{b.bookingId.split('-')[1]}</Badge>
+                            <Badge variant="secondary" className="text-[10px]">{b.status}</Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Step indicator ── */}
+        {flowState !== "DASHBOARD" && (
+          <div className="flex items-center justify-between mb-8">
+            <Button variant="ghost" size="sm" onClick={() => setFlowState("DASHBOARD")} className="mr-4 px-2">
+              <ArrowRight className="h-5 w-5 rotate-180" />
+            </Button>
+            {[
+              { stateReq: ["DRAFT", "ANALYZING"], label: t.step1 },
+              { stateReq: ["OPTIONS_READY"], label: t.step2 },
+              { stateReq: ["CONFIRMED_EDITABLE", "LOCKED"], label: t.step3 },
+            ].map((s, i) => {
+              const isActive = s.stateReq.includes(flowState);
+              const isPast = ["OPTIONS_READY", "CONFIRMED_EDITABLE", "LOCKED"].includes(flowState) && i < 2;
+              const highlighted = isActive || isPast;
+              return (
+                <div key={i} className="contents">
+                  {i > 0 && <div className={`h-1 flex-1 mx-2 sm:mx-4 ${highlighted ? "bg-primary" : "bg-muted"}`} />}
+                  <div className={`flex items-center gap-2 ${highlighted ? "text-primary" : "text-muted-foreground"}`}>
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold ${highlighted ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                      {i + 1}
+                    </div>
+                    <span className="font-semibold hidden sm:inline">{s.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* ══════════ STEP 1: DRAFT ══════════ */}
         {flowState === "DRAFT" && (
@@ -274,17 +370,12 @@ function FarmerFlow() {
                   </div>
                 </div>
 
-                <div className="border-t pt-6 grid md:grid-cols-2 gap-8">
-                  {/* Quality Form */}
+                <div className="border-t pt-6">
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">{lang === "en" ? "Declare Quality" : "गुणवत्ता घोषित करा"}</h3>
-                    <QualityForm value={quality} onChange={setQuality} lang={lang} />
-                  </div>
-                  
-                  {/* AI Upload */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">{lang === "en" ? "AI Image Analysis" : "AI फोटो विश्लेषण"}</h3>
-                    <AIUploadMock onComplete={setAiResult} lang={lang} />
+                    <h3 className="text-lg font-semibold mb-4">{lang === "en" ? "Image & Quality Declaration" : "फोटो आणि गुणवत्ता घोषित करा"}</h3>
+                    {selectedCropObj && (
+                      <AIUploadMock onComplete={setAiResult} lang={lang} crop={selectedCropObj} />
+                    )}
                   </div>
                 </div>
 
@@ -300,7 +391,7 @@ function FarmerFlow() {
                   <Button
                     size="lg" className="w-full text-lg h-14"
                     onClick={handleCalculate}
-                    disabled={!selectedCropId || !quantity || !consentGiven}
+                    disabled={!selectedCropId || !quantity || !consentGiven || !aiResult}
                   >
                     {t.analyzeBtn} <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
@@ -387,21 +478,25 @@ function FarmerFlow() {
                     </CardHeader>
                     <CardContent className="pt-4 space-y-1.5 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Gross (₹{option.pricePerKg}/kg)</span>
+                        <span className="text-muted-foreground">{lang === "en" ? "Gross Sale" : "एकूण विक्री"} (₹{option.pricePerKg}/kg)</span>
                         <span className="font-medium tabular-nums">{rupees(option.grossPayout)}</span>
                       </div>
                       <div className="flex justify-between text-red-600">
-                        <span>− Freight</span>
+                        <span>− {lang === "en" ? "Transport" : "वाहतूक खर्च"}</span>
                         <span className="tabular-nums">− {rupees(option.pooled.freightShare)}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600">
+                        <span>− {lang === "en" ? "Platform Fee" : "प्लॅटफॉर्म फी"}</span>
+                        <span className="tabular-nums">− {rupees(option.pooled.platformFee)}</span>
                       </div>
                       {option.pooled.spoilageLoss > 0 && (
                         <div className="flex justify-between text-amber-600">
-                          <span>− Spoilage risk</span>
+                          <span>− {lang === "en" ? "Est. Spoilage Loss" : "अंदाजे नुकसान"}</span>
                           <span className="tabular-nums">− {rupees(option.pooled.spoilageLoss)}</span>
                         </div>
                       )}
                       <div className={`pt-3 mt-2 border-t flex justify-between font-bold ${isSelected ? "text-xl text-primary" : "text-lg"}`}>
-                        <span>{lang === "en" ? "Final Payout" : "अंतिम रक्कम"}</span>
+                        <span>{lang === "en" ? "Est. Net Amount" : "अंदाजित निव्वळ रक्कम"}</span>
                         <span className="tabular-nums">{rupees(option.pooled.netPayout)}</span>
                       </div>
                     </CardContent>
@@ -432,34 +527,44 @@ function FarmerFlow() {
                       </div>
                     </div>
 
-                    {/* Explicit Capacity breakdown requested by user */}
-                    <div className="bg-muted p-4 rounded-lg space-y-3 border">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-2">
-                        <div>
-                          <p className="text-muted-foreground text-xs uppercase">Vehicle Capacity</p>
-                          <p className="font-semibold text-base">{vehicleCap ? vehicleCap.total.toLocaleString() : "..."} kg</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs uppercase">Current Pool Load</p>
-                          <p className="font-semibold text-base">{vehicleCap ? vehicleCap.booked.toLocaleString() : result.nearbyPool.totalWeightKg.toLocaleString()} kg</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs uppercase">Your Request</p>
-                          <p className="font-semibold text-primary text-base">{result.weightKg.toLocaleString()} kg</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs uppercase">Final Utilisation</p>
-                          <p className={`font-semibold text-base ${activeOption.pooled.utilisationPercent > 100 ? 'text-red-600' : 'text-green-600'}`}>
-                            {activeOption.pooled.utilisationPercent}%
-                          </p>
-                        </div>
+                    {/* Explicit Multi-Vehicle Breakdown */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-sm font-semibold">{lang === "en" ? "Total Requested:" : "एकूण विनंती:"} {result.weightKg.toLocaleString()} kg</span>
+                        <span className="text-sm font-semibold text-primary">{lang === "en" ? "Vehicles Required:" : "वाहने आवश्यक:"} {activeOption.pooled.vehicles.length}</span>
                       </div>
                       
-                      {activeOption.pooled.utilisationPercent > 100 && (
-                        <div className="bg-red-50 text-red-800 p-3 rounded text-sm font-medium border border-red-200">
-                          {lang === "en" ? "Warning: Full load exceeds vehicle capacity. System will split load or dispatch next available vehicle." : "चेतावणी: पूर्ण लोड वाहन क्षमतेपेक्षा जास्त आहे. सिस्टम लोड विभाजित करेल."}
+                      {activeOption.pooled.vehicles.map((v, i) => (
+                        <div key={i} className="bg-muted p-4 rounded-lg space-y-3 border">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-bold text-base">{v.name}</span>
+                            <Badge variant="outline" className="bg-background">#{v.id.slice(0, 8)}</Badge>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground text-[10px] uppercase">{lang === "en" ? "Vehicle Capacity" : "वाहन क्षमता"}</p>
+                              <p className="font-semibold">{v.maxCapacityKg.toLocaleString()} kg</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-[10px] uppercase">{lang === "en" ? "Your Allocated Load" : "तुमचा वाटप केलेला लोड"}</p>
+                              <p className="font-semibold text-primary">{v.allocatedKg.toLocaleString()} kg</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-[10px] uppercase">{lang === "en" ? "Final Utilisation" : "अंतिम वापर"}</p>
+                              <p className={`font-semibold ${v.allocatedKg > v.maxCapacityKg ? 'text-red-600' : 'text-green-600'}`}>
+                                {Math.round((v.allocatedKg / v.maxCapacityKg) * 100)}%
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {v.allocatedKg > v.maxCapacityKg && (
+                            <div className="bg-red-50 text-red-800 p-2 rounded text-xs font-medium border border-red-200 mt-2 flex gap-2">
+                              <AlertTriangle className="h-4 w-4 shrink-0" />
+                              {lang === "en" ? "Warning: Load exceeds capacity. System will split load or wait for next available vehicle." : "चेतावणी: लोड क्षमतेपेक्षा जास्त आहे. सिस्टम लोड विभाजित करेल."}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -476,12 +581,12 @@ function FarmerFlow() {
                   const hold = await createHoldFn({
                     data: {
                       farmerId: "FARMER-123",
-                      crop: cropName,
-                      quantityKg: Number(weight),
-                      quality: { moisture, visualGrade },
+                      crop: selectedCropObj?.name_en || "Unknown",
+                      quantityKg: Number(quantity) * 100, // Convert quintals to kg
+                      quality: aiResult,
                       destination: activeOption.mandiName,
                       vehicleAllocations: activeOption.pooled.vehicles.map(v => ({ vehicleId: v.id, quantityKg: v.allocatedKg })),
-                      platformFee: Math.round(activeOption.pooled.freightShare * 0.05), // 5% fee for demo
+                      platformFee: Math.round(activeOption.pooled.platformFee),
                       expectedNetRealization: activeOption.pooled.netPayout,
                     }
                   });
@@ -490,8 +595,9 @@ function FarmerFlow() {
                   setCountdown(remaining);
                   setFlowState("CONFIRMED_EDITABLE");
                   toast.success(lang === "en" ? "Vehicle reserved!" : "वाहन राखीव!", { id: 'hold' });
-                } catch (e) {
-                  toast.error("Failed to hold booking", { id: 'hold' });
+                } catch (e: any) {
+                  const msg = e?.message || e?.data?.message || (lang === "en" ? "Failed to hold booking" : "बुकिंग होल्ड करण्यात अयशस्वी");
+                  toast.error(msg, { id: 'hold' });
                 }
               }}>
                 {lang === "en" ? "Hold Booking" : "बुकिंग होल्ड"} <ArrowRight className="ml-2 h-5 w-5" />
@@ -555,8 +661,8 @@ function FarmerFlow() {
                     <span className="font-semibold text-right">{activeOption.mandiName}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3">
-                    <span className="text-muted-foreground">Vehicle Assigned</span>
-                    <span className="font-semibold text-right">{activeOption.pooled.vehicle}</span>
+                    <span className="text-muted-foreground">{lang === "en" ? "Vehicles Assigned" : "नेमलेली वाहने"}</span>
+                    <span className="font-semibold text-right">{activeOption.pooled.vehicles.map(v => v.name).join(', ')}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3">
                     <span className="text-muted-foreground">Est. Arrival Window</span>
@@ -566,7 +672,7 @@ function FarmerFlow() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">{lang === "en" ? "Estimated Net Realization" : "अपेक्षित अंतिम रक्कम"}</span>
+                    <span className="text-muted-foreground">{lang === "en" ? "Estimated Net Amount" : "अपेक्षित अंतिम रक्कम"}</span>
                     <span className="font-bold text-green-700 text-right text-xl">
                       {rupees(activeOption.pooled.netPayout)}
                     </span>
@@ -604,6 +710,7 @@ function FarmerFlow() {
           }
         }}
       />
+      <SupportTicketModal isOpen={supportOpen} onOpenChange={setSupportOpen} lang={lang} />
       </main>
     </div>
   );
