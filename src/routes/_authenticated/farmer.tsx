@@ -162,9 +162,15 @@ function FarmerFlow() {
       return () => clearInterval(timer);
     } else if (flowState === "CONFIRMED_EDITABLE" && countdown === 0) {
       setFlowState("LOCKED");
+      toast.error(
+        lang === "en"
+          ? "Booking window expired. Vehicle capacity has been released. (बुकिंग विंडो संपली. वाहनाची क्षमता सोडण्यात आली.)"
+          : "बुकिंग विंडो संपली. वाहनाची क्षमता सोडण्यात आली.",
+        { duration: 8000 }
+      );
     }
     return undefined;
-  }, [flowState, countdown]);
+  }, [flowState, countdown, lang]);
 
   const handleCalculate = async () => {
     const q = Number(quantity);
@@ -596,7 +602,12 @@ function FarmerFlow() {
                   setFlowState("CONFIRMED_EDITABLE");
                   toast.success(lang === "en" ? "Vehicle reserved!" : "वाहन राखीव!", { id: 'hold' });
                 } catch (e: any) {
-                  const msg = e?.message || e?.data?.message || (lang === "en" ? "Failed to hold booking" : "बुकिंग होल्ड करण्यात अयशस्वी");
+                  // Extract the most descriptive message from TanStack/server error wrappers
+                  const msg =
+                    e?.data?.message ||
+                    e?.message ||
+                    (typeof e === "string" ? e : null) ||
+                    (lang === "en" ? "Booking could not be confirmed. Please try again or select a different market." : "बुकिंग निश्चित करता आली नाही. कृपया पुन्हा प्रयत्न करा.");
                   toast.error(msg, { id: 'hold' });
                 }
               }}>

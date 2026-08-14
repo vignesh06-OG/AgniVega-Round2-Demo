@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 
 interface SupportTicketModalProps {
-  bookingId: string;
+  bookingId?: string;
   lang: "en" | "mr";
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const DICT = {
@@ -48,13 +50,18 @@ const DICT = {
   }
 }
 
-export function SupportTicketModal({ bookingId, lang }: SupportTicketModalProps) {
+export function SupportTicketModal({ bookingId, lang, isOpen: externalOpen, onOpenChange: externalSetOpen }: SupportTicketModalProps) {
   const t = DICT[lang] || DICT.en;
   
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [category, setCategory] = useState("");
   const [desc, setDesc] = useState("");
+
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    externalSetOpen ? externalSetOpen(v) : setInternalOpen(v);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
