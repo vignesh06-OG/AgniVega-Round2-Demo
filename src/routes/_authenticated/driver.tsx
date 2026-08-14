@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Truck, MapPin, Package, CheckCircle, Navigation } from "lucide-react";
+import { Truck, MapPin, Package, CheckCircle, Navigation, AlertCircle } from "lucide-react";
 
 import { BrandHeader } from "@/components/agnivega/BrandHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -62,6 +62,19 @@ function DriverDashboard() {
       queryClient.invalidateQueries({ queryKey: ["driver-trips"] });
     },
   });
+
+  const [sosActive, setSosActive] = useState<{ active: boolean; time: string | null }>({ active: false, time: null });
+
+  const handleSos = () => {
+    if (!sosActive.active) {
+      const now = new Date().toLocaleTimeString();
+      setSosActive({ active: true, time: now });
+      toast.error(`SOS Alert Triggered at ${now}! Fleet Manager Notified.`);
+    } else {
+      setSosActive({ active: false, time: null });
+      toast.success("SOS Alert Cancelled.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-secondary/30 pb-20">
@@ -122,8 +135,13 @@ function DriverDashboard() {
                     <CheckCircle className="w-4 h-4 mr-2" /> Arrived & Completed
                   </Button>
                 )}
-                <Button variant="outline" className="flex-1">
-                  Report Issue
+                <Button 
+                  variant={sosActive.active ? "destructive" : "outline"} 
+                  className="flex-1 transition-all"
+                  onClick={handleSos}
+                >
+                  <AlertCircle className="w-4 h-4 mr-2" /> 
+                  {sosActive.active ? `SOS Active (${sosActive.time})` : "SOS Alert"}
                 </Button>
               </div>
             </CardContent>

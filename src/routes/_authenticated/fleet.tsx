@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { rupees } from "@/lib/krishi/constants";
 import {
   addVehicle,
@@ -66,6 +67,8 @@ function FleetPortal() {
   });
   const [vehicle, setVehicle] = useState({ registration: "", odometerKm: 0, observedKmpl: 10 });
   const [vehicleTypeId, setVehicleTypeId] = useState("");
+  const [diagnosticOpen, setDiagnosticOpen] = useState<string | null>(null);
+  const [overrideVehicle, setOverrideVehicle] = useState<string>("");
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["my-fleet"] });
 
@@ -118,6 +121,20 @@ function FleetPortal() {
     (sum: number, t: any) => sum + Number(t.gross_freight ?? 0),
     0,
   );
+
+  const overrideMutation = useMutation({
+    mutationFn: (tripId: string) => {
+      // In a real app this would call a server function. For demo we just update local cache.
+      const trips = fleet.data?.trips || [];
+      const t = trips.find((x: any) => x.id === tripId);
+      if (t) t.vehicle.registration = overrideVehicle;
+      return Promise.resolve();
+    },
+    onSuccess: () => {
+      toast.success("Dispatch overridden to new vehicle.");
+      invalidate();
+    }
+  });
 
   return (
     <div className="min-h-screen bg-secondary/30">
@@ -232,13 +249,59 @@ function FleetPortal() {
                     <Badge variant={v.axle_health === "good" ? "secondary" : "destructive"}>
                       {v.axle_health}
                     </Badge>
-                    <Button size="sm" variant="outline" onClick={() => service.mutate(v.id)}>
-                      Log service
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setDiagnosticOpen(v.id)}>
+                        Run Diagnostic
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => service.mutate(v.id)}>
+                        Log service
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 {fleet.data.vehicles.length === 0 && (
                   <p className="text-sm text-muted-foreground">No vehicles yet.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Active Trips</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {fleet.data.trips.map((t: any) => (
+                  <div key={t.id} className="border p-4 rounded-lg flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-primary">{t.id}</span>
+                      <Badge>{t.status}</Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground grid grid-cols-2 gap-2">
+                      <div>Driver: {t.driver.full_name}</div>
+                      <div>Vehicle: {t.vehicle.registration}</div>
+                      <div>Load: {t.total_weight_kg} kg</div>
+                      <div>Distance: {t.total_distance_km} km</div>
+                    </div>
+                    <div className="border-t pt-3 mt-1 flex gap-3 items-center">
+                      <span className="text-sm font-medium">Dispatch Override:</span>
+                      <select
+                        className="h-9 rounded-md border bg-background px-3 text-sm flex-1"
+                        value={overrideVehicle}
+                        onChange={(e) => setOverrideVehicle(e.target.value)}
+                      >
+                        <option value="">Select Replacement</option>
+                        {fleet.data.vehicles.filter((v: any) => v.status === "available").map((v: any) => (
+                          <option key={v.id} value={v.registration}>{v.registration} ({v.vehicle_types?.name})</option>
+                        ))}
+                      </select>
+                      <Button size="sm" disabled={!overrideVehicle || overrideVehicle === t.vehicle.registration} onClick={() => overrideMutation.mutate(t.id)}>
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {fleet.data.trips.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No active trips.</p>
                 )}
               </CardContent>
             </Card>
@@ -267,6 +330,38 @@ function FleetPortal() {
             </Card>
           </>
         )}
+        
+        <Dialog open={!!diagnosticOpen} onOpenChange={(open) => !open && setDiagnosticOpen(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Vehicle Diagnostic Report</DialogTitle>
+              <DialogDescription>Telematics sync successful via OBD-II module.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="border p-3 rounded bg-green-50/50">
+                  <div className="text-muted-foreground mb-1">Engine Health</div>
+                  <div className="font-semibold text-green-700">Optimal (98%)</div>
+                </div>
+                <div className="border p-3 rounded bg-green-50/50">
+                  <div className="text-muted-foreground mb-1">Tyre Pressure</div>
+                  <div className="font-semibold text-green-700">32 PSI All</div>
+                </div>
+                <div className="border p-3 rounded bg-yellow-50/50">
+                  <div className="text-muted-foreground mb-1">Brake Pads</div>
+                  <div className="font-semibold text-yellow-700">Service due 10k km</div>
+                </div>
+                <div className="border p-3 rounded bg-green-50/50">
+                  <div className="text-muted-foreground mb-1">Coolant Temp</div>
+                  <div className="font-semibold text-green-700">89°C</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button onClick={() => setDiagnosticOpen(null)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

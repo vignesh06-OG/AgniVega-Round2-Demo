@@ -16,38 +16,28 @@ const calcSchema = z.object({
 
 export type CalcInput = z.infer<typeof calcSchema>;
 
-// Static Data Store for the Hackathon Prototype
 const mockCrops = [
-  {
-    id: "crop-1",
-    name_en: "Onion",
-    name_hi: "Pyaaz",
-    name_mr: "Kanda",
-    slug: "onion",
-    perishable: false,
-    spoilage_hours: 336,
-    crate_kg: 50,
-  },
-  {
-    id: "crop-2",
-    name_en: "Grapes",
-    name_hi: "Angoor",
-    name_mr: "Draksha",
-    slug: "grapes",
-    perishable: true,
-    spoilage_hours: 48,
-    crate_kg: 20,
-  },
-  {
-    id: "crop-3",
-    name_en: "Tomato",
-    name_hi: "Tamatar",
-    name_mr: "Tomato",
-    slug: "tomato",
-    perishable: true,
-    spoilage_hours: 72,
-    crate_kg: 25,
-  },
+  { id: "crop-1", name_en: "Onion", name_hi: "Pyaaz", name_mr: "कांदा", slug: "onion", perishable: false, spoilage_hours: 336, crate_kg: 50 },
+  { id: "crop-2", name_en: "Grapes", name_hi: "Angoor", name_mr: "द्राक्षे", slug: "grapes", perishable: true, spoilage_hours: 48, crate_kg: 20 },
+  { id: "crop-3", name_en: "Tomato", name_hi: "Tamatar", name_mr: "टोमॅटो", slug: "tomato", perishable: true, spoilage_hours: 72, crate_kg: 25 },
+  { id: "crop-4", name_en: "Soybean", name_hi: "Soyabean", name_mr: "सोयाबीन", slug: "soybean", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-5", name_en: "Cotton", name_hi: "Kapas", name_mr: "कापूस", slug: "cotton", perishable: false, spoilage_hours: 1440, crate_kg: 50 },
+  { id: "crop-6", name_en: "Tur", name_hi: "Arhar", name_mr: "तूर", slug: "tur", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-7", name_en: "Chana", name_hi: "Chana", name_mr: "हरभरा", slug: "chana", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-8", name_en: "Moong", name_hi: "Moong", name_mr: "मूग", slug: "moong", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-9", name_en: "Wheat", name_hi: "Gehu", name_mr: "गहू", slug: "wheat", perishable: false, spoilage_hours: 1440, crate_kg: 50 },
+  { id: "crop-10", name_en: "Jowar", name_hi: "Jowar", name_mr: "ज्वारी", slug: "jowar", perishable: false, spoilage_hours: 1440, crate_kg: 50 },
+  { id: "crop-11", name_en: "Bajra", name_hi: "Bajra", name_mr: "बाजरी", slug: "bajra", perishable: false, spoilage_hours: 1440, crate_kg: 50 },
+  { id: "crop-12", name_en: "Maize", name_hi: "Makka", name_mr: "मका", slug: "maize", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-13", name_en: "Potato", name_hi: "Aloo", name_mr: "बटाटा", slug: "potato", perishable: false, spoilage_hours: 480, crate_kg: 50 },
+  { id: "crop-14", name_en: "Groundnut", name_hi: "Mungfali", name_mr: "भुईमूग", slug: "groundnut", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-15", name_en: "Sunflower", name_hi: "Surajmukhi", name_mr: "सूर्यफूल", slug: "sunflower", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-16", name_en: "Mustard", name_hi: "Sarson", name_mr: "मोहरी", slug: "mustard", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-17", name_en: "Urad", name_hi: "Urad", name_mr: "उडीद", slug: "urad", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-18", name_en: "Rice", name_hi: "Chawal", name_mr: "तांदूळ", slug: "rice", perishable: false, spoilage_hours: 1440, crate_kg: 50 },
+  { id: "crop-19", name_en: "Sugarcane", name_hi: "Ganna", name_mr: "ऊस", slug: "sugarcane", perishable: true, spoilage_hours: 72, crate_kg: 1000 },
+  { id: "crop-20", name_en: "Turmeric", name_hi: "Haldi", name_mr: "हळद", slug: "turmeric", perishable: false, spoilage_hours: 720, crate_kg: 50 },
+  { id: "crop-21", name_en: "Ginger", name_hi: "Adrak", name_mr: "आले", slug: "ginger", perishable: true, spoilage_hours: 168, crate_kg: 50 },
 ];
 
 const mockVillages = [
@@ -133,26 +123,12 @@ const mockPrices = mockCrops.flatMap(crop => {
 
 
 const mockVehicles = [
-  {
-    id: "vt-1",
-    slug: "tata_ace",
-    name: "Tata Ace",
-    payload_kg: 750,
-    base_cost_per_km: 15.0,
-    toll_allowance_per_km: 0,
-    mileage_kmpl: 15,
-    fuel: "diesel",
-  },
-  {
-    id: "vt-2",
-    slug: "mahindra_pickup",
-    name: "Mahindra Pickup",
-    payload_kg: 1500,
-    base_cost_per_km: 20.0,
-    toll_allowance_per_km: 0,
-    mileage_kmpl: 12,
-    fuel: "diesel",
-  },
+  { id: "TATA-ACE-01", slug: "TATA-ACE-01", name: "Tata Ace Gold", payload_kg: 750, base_cost_per_km: 15.0, toll_allowance_per_km: 0, mileage_kmpl: 19, fuel: "diesel" },
+  { id: "PIAGGIO-APE-06", slug: "PIAGGIO-APE-06", name: "Piaggio Ape", payload_kg: 500, base_cost_per_km: 12.0, toll_allowance_per_km: 0, mileage_kmpl: 22, fuel: "diesel" },
+  { id: "MAHINDRA-PICKUP-02", slug: "MAHINDRA-PICKUP-02", name: "Mahindra Bolero Pickup", payload_kg: 1500, base_cost_per_km: 20.0, toll_allowance_per_km: 0, mileage_kmpl: 12, fuel: "diesel" },
+  { id: "EICHER-1110-03", slug: "EICHER-1110-03", name: "Eicher Pro 1110", payload_kg: 7000, base_cost_per_km: 45.0, toll_allowance_per_km: 2, mileage_kmpl: 6, fuel: "diesel" },
+  { id: "TATA-1109-04", slug: "TATA-1109-04", name: "Tata LPT 1109", payload_kg: 7000, base_cost_per_km: 45.0, toll_allowance_per_km: 2, mileage_kmpl: 6, fuel: "diesel" },
+  { id: "BHARATBENZ-1215-05", slug: "BHARATBENZ-1215-05", name: "BharatBenz 1215R", payload_kg: 12000, base_cost_per_km: 65.0, toll_allowance_per_km: 5, mileage_kmpl: 4, fuel: "diesel" },
 ];
 
 export const getReferenceData = createServerFn({ method: "GET" }).handler(

@@ -78,6 +78,7 @@ export interface MandiOption {
     spoilageLoss: number;
     netPayout: number;
     vehicle: string;
+    vehicles: { id: string; name: string; allocatedKg: number }[];
     poolPartners: number;
     utilisationPercent: number;
     detourMinutes: number;
@@ -88,6 +89,7 @@ export interface MandiOption {
     spoilageLoss: number;
     netPayout: number;
     vehicle: string;
+    vehicles: { id: string; name: string; allocatedKg: number }[];
     utilisationPercent: number;
   };
   savings: number;

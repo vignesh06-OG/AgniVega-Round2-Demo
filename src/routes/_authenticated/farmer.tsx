@@ -370,7 +370,7 @@ function FarmerFlow() {
                   >
                     {isBest && (
                       <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] font-bold px-3 py-1 uppercase tracking-wider rounded-bl-lg z-10 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> {lang === "en" ? "Best ENR" : "सर्वोत्तम ENR"}
+                        <CheckCircle2 className="h-3 w-3" /> {lang === "en" ? "Best Payout" : "सर्वोत्तम रक्कम"}
                       </div>
                     )}
                     <CardHeader className={`${isSelected ? "bg-primary/5" : "bg-muted/30"} pb-3 border-b`}>
@@ -401,7 +401,7 @@ function FarmerFlow() {
                         </div>
                       )}
                       <div className={`pt-3 mt-2 border-t flex justify-between font-bold ${isSelected ? "text-xl text-primary" : "text-lg"}`}>
-                        <span>ENR</span>
+                        <span>{lang === "en" ? "Final Payout" : "अंतिम रक्कम"}</span>
                         <span className="tabular-nums">{rupees(option.pooled.netPayout)}</span>
                       </div>
                     </CardContent>
@@ -480,7 +480,7 @@ function FarmerFlow() {
                       quantityKg: Number(weight),
                       quality: { moisture, visualGrade },
                       destination: activeOption.mandiName,
-                      vehicleId: activeOption.pooled.vehicle,
+                      vehicleAllocations: activeOption.pooled.vehicles.map(v => ({ vehicleId: v.id, quantityKg: v.allocatedKg })),
                       platformFee: Math.round(activeOption.pooled.freightShare * 0.05), // 5% fee for demo
                       expectedNetRealization: activeOption.pooled.netPayout,
                     }
@@ -532,7 +532,7 @@ function FarmerFlow() {
                     <Edit2 className="mr-2 h-4 w-4" /> {t.editBtn}
                   </Button>
                   <Button onClick={() => setPaymentOpen(true)}>
-                    {lang === "en" ? "Pay & Confirm" : "पेमेंट आणि पुष्टी करा"}
+                    {lang === "en" ? "Pay Demo Fee & Confirm" : "डेमो फी भरा आणि पुष्टी करा"}
                   </Button>
                 </div>
               </div>
@@ -566,7 +566,7 @@ function FarmerFlow() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Expected Net Realization</span>
+                    <span className="text-muted-foreground">{lang === "en" ? "Estimated Net Realization" : "अपेक्षित अंतिम रक्कम"}</span>
                     <span className="font-bold text-green-700 text-right text-xl">
                       {rupees(activeOption.pooled.netPayout)}
                     </span>

@@ -76,8 +76,12 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
     const soloMin = matrix.durationsMin[0]?.[mandiIdx] ?? 0;
 
     /* ---- Solo scenario ---- */
-    const soloVehicle = recommendVehicleFromTypes(input.vehicles, input.weightKg);
-    const soloFreight = tripFreightCost(soloVehicle, soloKm, input.fuel);
+    const soloAllocations = recommendVehicleFromTypes(input.vehicles, input.weightKg);
+    const soloVehicleName = soloAllocations.length > 1 
+      ? `${soloAllocations.length} Vehicles`
+      : (soloAllocations[0]?.vehicle.name ?? "Unknown");
+      
+    const soloFreight = soloAllocations.reduce((sum, alloc) => sum + tripFreightCost(alloc.vehicle, soloKm, input.fuel), 0);
     const soloRisk = spoilageRisk(
       input.spoilageHours,
       soloKm,
@@ -105,8 +109,12 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
       pooledMin += subDur[order[i]!]?.[order[i + 1]!] ?? 0;
     }
 
-    const poolVehicle = recommendVehicleFromTypes(input.vehicles, pooledWeight);
-    const pooledFreight = tripFreightCost(poolVehicle, pooledKm, input.fuel);
+    const poolAllocations = recommendVehicleFromTypes(input.vehicles, pooledWeight);
+    const poolVehicleName = poolAllocations.length > 1 
+      ? `${poolAllocations.length} Vehicles`
+      : (poolAllocations[0]?.vehicle.name ?? "Unknown");
+      
+    const pooledFreight = poolAllocations.reduce((sum, alloc) => sum + tripFreightCost(alloc.vehicle, pooledKm, input.fuel), 0);
     const legs = [
       { id: input.requestId, weightKg: input.weightKg, distanceKm: soloKm },
       ...input.partners.map((p) => ({
@@ -135,9 +143,11 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
       risk.valueAtRisk,
     );
 
-    const soloLitres =
-      dieselBreakdown(soloVehicle, soloKm, input.fuel).litres * (1 + input.partners.length);
-    const pooledLitres = dieselBreakdown(poolVehicle, pooledKm, input.fuel).litres;
+    const soloLitres = soloAllocations.reduce((sum, alloc) => sum + dieselBreakdown(alloc.vehicle, soloKm, input.fuel).litres, 0) * (1 + input.partners.length);
+    const pooledLitres = poolAllocations.reduce((sum, alloc) => sum + dieselBreakdown(alloc.vehicle, pooledKm, input.fuel).litres, 0);
+    
+    const pooledUtilisation = poolAllocations.reduce((sum, alloc) => sum + alloc.vehicle.payloadKg, 0);
+    const soloUtilisation = soloAllocations.reduce((sum, alloc) => sum + alloc.vehicle.payloadKg, 0);
 
     return {
       mandiId: mandi.id,
@@ -153,9 +163,10 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
         platformFee: Math.round(pooledEarnings.platformFee),
         spoilageLoss: Math.round(pooledEarnings.spoilageLoss),
         netPayout: Math.round(pooledEarnings.netPayout),
-        vehicle: poolVehicle.name,
+        vehicle: poolVehicleName,
+        vehicles: poolAllocations.map(a => ({ id: a.vehicle.id || a.vehicle.slug, name: a.vehicle.name, allocatedKg: a.allocatedKg })),
         poolPartners: input.partners.length,
-        utilisationPercent: Math.round(utilisation(pooledWeight, poolVehicle.payloadKg) * 100),
+        utilisationPercent: Math.round(utilisation(pooledWeight, pooledUtilisation) * 100),
         detourMinutes: Math.round(detourMinutes),
       },
       solo: {
@@ -163,8 +174,9 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
         platformFee: Math.round(soloEarnings.platformFee),
         spoilageLoss: Math.round(soloEarnings.spoilageLoss),
         netPayout: Math.round(soloEarnings.netPayout),
-        vehicle: soloVehicle.name,
-        utilisationPercent: Math.round(utilisation(input.weightKg, soloVehicle.payloadKg) * 100),
+        vehicle: soloVehicleName,
+        vehicles: soloAllocations.map(a => ({ id: a.vehicle.id || a.vehicle.slug, name: a.vehicle.name, allocatedKg: a.allocatedKg })),
+        utilisationPercent: Math.round(utilisation(input.weightKg, soloUtilisation) * 100),
       },
       savings: Math.round(pooledEarnings.netPayout - soloEarnings.netPayout),
       spoilage: {

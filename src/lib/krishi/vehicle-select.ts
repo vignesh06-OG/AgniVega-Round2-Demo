@@ -3,6 +3,7 @@ import { PLATFORM as BASE, type VehicleProfile } from "./constants";
 export const PLATFORM = { ...BASE, poolRadiusKm: 12 };
 
 export interface VehicleRow {
+  id?: string;
   slug: string;
   name: string;
   payload_kg: number | string;
@@ -14,6 +15,7 @@ export interface VehicleRow {
 
 export function toVehicleProfile(row: VehicleRow): VehicleProfile {
   return {
+    id: row.id || row.slug,
     slug: row.slug,
     name: row.name,
     payloadKg: Number(row.payload_kg),
@@ -24,11 +26,37 @@ export function toVehicleProfile(row: VehicleRow): VehicleProfile {
   };
 }
 
-/** Smallest vehicle in the live fleet catalogue that can carry the payload. */
+export interface VehicleAllocation {
+  vehicle: VehicleProfile;
+  allocatedKg: number;
+}
+
+/** 
+ * Recommends one or more vehicles to carry the payload. 
+ * If weight exceeds the largest vehicle, it splits the load.
+ */
 export function recommendVehicleFromTypes(
   vehicles: VehicleProfile[],
   weightKg: number,
-): VehicleProfile {
-  const sorted = [...vehicles].sort((a, b) => a.payloadKg - b.payloadKg);
-  return sorted.find((v) => v.payloadKg >= weightKg) ?? sorted[sorted.length - 1]!;
+): VehicleAllocation[] {
+  const sorted = [...vehicles].sort((a, b) => b.payloadKg - a.payloadKg);
+  const largest = sorted[0];
+  if (!largest) return [];
+
+  const allocations: VehicleAllocation[] = [];
+  let remaining = weightKg;
+
+  while (remaining > 0) {
+    const nextVehicle = sorted.slice().reverse().find((v) => v.payloadKg >= remaining);
+    
+    if (nextVehicle) {
+      allocations.push({ vehicle: nextVehicle, allocatedKg: remaining });
+      remaining = 0;
+    } else {
+      allocations.push({ vehicle: largest, allocatedKg: largest.payloadKg });
+      remaining -= largest.payloadKg;
+    }
+  }
+
+  return allocations;
 }

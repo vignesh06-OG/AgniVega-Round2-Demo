@@ -39,6 +39,18 @@ export const upsertDriverProfile = createServerFn({ method: "POST" })
 
 import { DEMO_ENR_RESULTS, DEMO_POOL_PARTNERS, DEMO_WINNER } from "./canonical-demo";
 
+// Mock Database for Driver Trips
+let TRIPS: any[] = [
+  {
+    id: "trip-1",
+    mandis: { name: DEMO_WINNER.mandiName },
+    total_weight_kg: 1000 + DEMO_POOL_PARTNERS.reduce((a, p) => a + p.weightKg, 0),
+    total_distance_km: DEMO_WINNER.distanceKm,
+    trip_stops: [{}, {}, {}, {}], // 1 pickup + 3 partners
+    status: "ACTIVE",
+  }
+];
+
 export const listAvailableLoads = createServerFn({ method: "GET" }).handler(async () => {
   return {
     blocked: false,
@@ -77,21 +89,21 @@ export const acceptLoad = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async () => {
-    return { id: "mock-trip-1", status: "PLANNED" };
+  .handler(async ({ data }) => {
+    const newTrip = {
+      id: `trip-${Math.random().toString(36).substring(2, 8)}`,
+      mandis: { name: DEMO_WINNER.mandiName },
+      total_weight_kg: 1000,
+      total_distance_km: DEMO_WINNER.distanceKm,
+      trip_stops: [{}],
+      status: "PLANNED",
+    };
+    TRIPS.push(newTrip);
+    return { id: newTrip.id, status: "PLANNED" };
   });
 
 export const listMyTrips = createServerFn({ method: "GET" }).handler(async () => {
-  return [
-    {
-      id: "trip-1",
-      mandis: { name: DEMO_WINNER.mandiName },
-      total_weight_kg: 1000 + DEMO_POOL_PARTNERS.reduce((a, p) => a + p.weightKg, 0),
-      total_distance_km: DEMO_WINNER.distanceKm,
-      trip_stops: [{}, {}, {}, {}], // 1 pickup + 3 partners
-      status: "ACTIVE",
-    },
-  ];
+  return TRIPS;
 });
 
 export const updateTripStatus = createServerFn({ method: "POST" })
@@ -105,7 +117,11 @@ export const updateTripStatus = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async () => {
+  .handler(async ({ data }) => {
+    const trip = TRIPS.find((t) => t.id === data.tripId);
+    if (trip) {
+      trip.status = data.status;
+    }
     return { ok: true };
   });
 

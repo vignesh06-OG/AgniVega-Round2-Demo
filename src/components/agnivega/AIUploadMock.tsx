@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Camera, Image as ImageIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Camera, Image as ImageIcon, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export interface AIResult {
   visualGrade: string;
@@ -76,12 +78,18 @@ export function AIUploadMock({ onComplete, lang }: AIUploadMockProps) {
               <p className="text-xs text-muted-foreground mt-1">{t.uploadDesc}</p>
             </div>
             <div className="flex justify-center gap-3">
-              <Button variant="outline" onClick={simulateUpload}>
-                <Camera className="mr-2 h-4 w-4" /> {t.takePhoto}
-              </Button>
-              <Button variant="outline" onClick={simulateUpload}>
-                <ImageIcon className="mr-2 h-4 w-4" /> {t.uploadFile}
-              </Button>
+              <div className="relative">
+                <Input id="camera-upload" type="file" accept="image/*" capture="environment" className="hidden" onChange={simulateUpload} />
+                <Label htmlFor="camera-upload" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                  <Camera className="mr-2 h-4 w-4" /> {t.takePhoto}
+                </Label>
+              </div>
+              <div className="relative">
+                <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={simulateUpload} />
+                <Label htmlFor="file-upload" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                  <ImageIcon className="mr-2 h-4 w-4" /> {t.uploadFile}
+                </Label>
+              </div>
             </div>
           </div>
         )}
@@ -109,6 +117,11 @@ export function AIUploadMock({ onComplete, lang }: AIUploadMockProps) {
               
               <div className="text-muted-foreground">{t.confidence}</div>
               <div className="font-medium text-right">{result.confidence}%</div>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+              <AlertTriangle className="h-3 w-3" />
+              AI Quality Estimate — Demo Model
             </div>
           </div>
         )}

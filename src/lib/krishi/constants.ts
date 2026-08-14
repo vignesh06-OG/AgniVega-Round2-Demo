@@ -27,13 +27,14 @@ export const PLATFORM = {
 export type FuelKind = "diesel" | "petrol";
 
 export interface VehicleProfile {
+  id?: string;
   slug: string;
   name: string;
   payloadKg: number;
   mileageKmpl: number;
   baseCostPerKm: number;
   tollAllowancePerKm: number;
-  fuel: FuelKind;
+  fuel: "diesel" | "petrol" | "cng" | "ev";
 }
 
 /** Fallback vehicle catalogue used when the database is unreachable. */

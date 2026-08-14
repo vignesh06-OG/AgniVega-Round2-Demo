@@ -20,6 +20,8 @@ import {
   overrideMandiPrice,
   reviewKyc,
   updateCommission,
+  resolveTicket,
+  toggleUserStatus,
 } from "@/lib/krishi/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -54,6 +56,8 @@ function AdminPortal() {
   const kycFn = useServerFn(reviewKyc);
   const commissionFn = useServerFn(updateCommission);
   const priceFn = useServerFn(overrideMandiPrice);
+  const resolveTicketFn = useServerFn(resolveTicket);
+  const toggleUserStatusFn = useServerFn(toggleUserStatus);
 
   const overview = useQuery({
     queryKey: ["admin-overview"],
@@ -90,6 +94,22 @@ function AdminPortal() {
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const resolveTicketMut = useMutation({
+    mutationFn: (ticketId: string) => resolveTicketFn({ data: { ticketId } }),
+    onSuccess: () => {
+      toast.success("Support ticket resolved");
+      invalidate();
+    },
+  });
+
+  const toggleUserMut = useMutation({
+    mutationFn: (userId: string) => toggleUserStatusFn({ data: { userId } }),
+    onSuccess: () => {
+      toast.success("User status updated");
+      invalidate();
+    },
   });
 
   if (overview.isError) {
@@ -138,8 +158,10 @@ function AdminPortal() {
         </div>
 
         <Tabs defaultValue="kyc">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="kyc">KYC queue</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="tickets">Support Tickets</TabsTrigger>
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
             <TabsTrigger value="livemap">Live routing map</TabsTrigger>
             <TabsTrigger value="resilience">Router health</TabsTrigger>
@@ -176,6 +198,65 @@ function AdminPortal() {
             ))}
             {(data?.kyc ?? []).length === 0 && (
               <p className="text-sm text-muted-foreground">KYC queue is empty.</p>
+            )}
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-4 space-y-2">
+            {(data?.users ?? []).map((row: any) => (
+              <div
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-3"
+              >
+                <div className="flex flex-col">
+                  <span className="font-semibold">{row.name}</span>
+                  <span className="text-sm text-muted-foreground">{row.id} · {row.role}</span>
+                </div>
+                <Badge variant={row.status === "ACTIVE" ? "default" : "destructive"}>{row.status}</Badge>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={row.status === "ACTIVE" ? "destructive" : "default"}
+                    onClick={() => toggleUserMut.mutate(row.id)}
+                  >
+                    {row.status === "ACTIVE" ? "Ban User" : "Unban User"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {(data?.users ?? []).length === 0 && (
+              <p className="text-sm text-muted-foreground">No users found.</p>
+            )}
+          </TabsContent>
+
+          <TabsContent value="tickets" className="mt-4 space-y-2">
+            {(data?.tickets ?? []).map((row: any) => (
+              <div
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-3"
+              >
+                <div className="flex flex-col flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{row.id}</span>
+                    <Badge variant={row.status === "OPEN" ? "default" : "secondary"}>{row.status}</Badge>
+                    {row.priority === "URGENT" && <Badge variant="destructive">URGENT</Badge>}
+                  </div>
+                  <span className="text-sm mt-1">{row.subject}</span>
+                  <span className="text-xs text-muted-foreground mt-1">Reported by: {row.user}</span>
+                </div>
+                <div className="flex gap-2">
+                  {row.status === "OPEN" && (
+                    <Button
+                      size="sm"
+                      onClick={() => resolveTicketMut.mutate(row.id)}
+                    >
+                      Resolve
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {(data?.tickets ?? []).length === 0 && (
+              <p className="text-sm text-muted-foreground">No support tickets found.</p>
             )}
           </TabsContent>
 
@@ -271,20 +352,6 @@ function AdminPortal() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <AnimatedLiveMap />
-                <div className="flex gap-4 text-sm text-muted-foreground justify-center">
-                  <div className="flex items-center gap-1">
-                    <span className="h-3 w-3 rounded-full bg-[#1B4332]"></span> Primary Pickup
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-3 w-3 rounded-full bg-[#2D6A4F]"></span> Pooled Partners
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-3 w-3 rounded-full bg-[#E9C46A]"></span> Mandi
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-3 w-3 rounded-full bg-[#B23A48]"></span> Driver
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -412,22 +479,63 @@ function AnimatedLiveMap() {
     return () => clearInterval(interval);
   }, []);
 
+  const [visibleNodes, setVisibleNodes] = useState<Record<string, boolean>>({
+    mandi: true,
+    pickup: true,
+    partner: true,
+    driver: true
+  });
+
+  const toggleNode = (kind: string) => {
+    setVisibleNodes(prev => ({ ...prev, [kind]: !prev[kind] }));
+  };
+
+  const allPoints = [
+    { kind: "mandi", lat: 19.8833, lng: 74.4833, label: "Kopargaon APMC (Mandi)" },
+    { kind: "pickup", lat: 19.892, lng: 74.475, label: "Farm A (Onion)" },
+    { kind: "partner", lat: 19.871, lng: 74.492, label: "Farm B (Onion, Pooled)" },
+    { kind: "partner", lat: 19.865, lng: 74.481, label: "Farm C (Onion, Pooled)" },
+    {
+      kind: "driver",
+      lat: driverPos?.lat ?? 19.878,
+      lng: driverPos?.lng ?? 74.46,
+      label: "Driver MH15 (In Transit)",
+    },
+  ];
+
   return (
-    <LiveMap
-      height={500}
-      points={[
-        { kind: "mandi", lat: 19.8833, lng: 74.4833, label: "Kopargaon APMC (Mandi)" },
-        { kind: "pickup", lat: 19.892, lng: 74.475, label: "Farm A (Onion)" },
-        { kind: "partner", lat: 19.871, lng: 74.492, label: "Farm B (Onion, Pooled)" },
-        { kind: "partner", lat: 19.865, lng: 74.481, label: "Farm C (Onion, Pooled)" },
-        {
-          kind: "driver",
-          lat: driverPos?.lat ?? 19.878,
-          lng: driverPos?.lng ?? 74.46,
-          label: "Driver MH15 (In Transit)",
-        },
-      ]}
-      route={routePoints}
-    />
+    <div className="space-y-4">
+      <div className="flex gap-4 text-sm text-muted-foreground justify-center flex-wrap">
+        <button 
+          onClick={() => toggleNode('pickup')}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.pickup ? 'bg-secondary' : 'opacity-50'}`}
+        >
+          <span className="h-3 w-3 rounded-full bg-[#1B4332]"></span> Primary Pickup
+        </button>
+        <button 
+          onClick={() => toggleNode('partner')}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.partner ? 'bg-secondary' : 'opacity-50'}`}
+        >
+          <span className="h-3 w-3 rounded-full bg-[#2D6A4F]"></span> Pooled Partners
+        </button>
+        <button 
+          onClick={() => toggleNode('mandi')}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.mandi ? 'bg-secondary' : 'opacity-50'}`}
+        >
+          <span className="h-3 w-3 rounded-full bg-[#E9C46A]"></span> Mandi
+        </button>
+        <button 
+          onClick={() => toggleNode('driver')}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.driver ? 'bg-secondary' : 'opacity-50'}`}
+        >
+          <span className="h-3 w-3 rounded-full bg-[#B23A48]"></span> Driver
+        </button>
+      </div>
+      <LiveMap
+        height={500}
+        points={allPoints.filter(p => visibleNodes[p.kind as keyof typeof visibleNodes]) as any}
+        route={routePoints}
+      />
+    </div>
   );
 }

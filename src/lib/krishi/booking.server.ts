@@ -26,7 +26,7 @@ export interface BookingRecord {
   quantityKg: number;
   quality: any;
   destination: string;
-  vehicleId: string;
+  vehicleAllocations: { vehicleId: string; quantityKg: number }[];
   platformFee: number;
   expectedNetRealization: number;
   status: BookingState;
@@ -60,9 +60,11 @@ function expireOldBookings() {
     if (b.status === "BOOKING_HELD" && b.expiresAt && now > b.expiresAt) {
       b.status = "CANCELLED_PAYMENT_TIMEOUT";
       // Release capacity
-      if (VEHICLE_CAPACITIES[b.vehicleId]) {
-        VEHICLE_CAPACITIES[b.vehicleId].booked -= b.quantityKg;
-      }
+      b.vehicleAllocations.forEach(alloc => {
+        if (VEHICLE_CAPACITIES[alloc.vehicleId]) {
+          VEHICLE_CAPACITIES[alloc.vehicleId].booked -= alloc.quantityKg;
+        }
+      });
     }
   });
 }
@@ -76,7 +78,7 @@ export const createBookingHold = createServerFn({ method: "POST" })
         quantityKg: z.number(),
         quality: z.any(),
         destination: z.string(),
-        vehicleId: z.string(),
+        vehicleAllocations: z.array(z.object({ vehicleId: z.string(), quantityKg: z.number() })),
         platformFee: z.number(),
         expectedNetRealization: z.number(),
       })
@@ -85,17 +87,20 @@ export const createBookingHold = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     expireOldBookings();
 
-    // Verify Capacity
-    const cap = VEHICLE_CAPACITIES[data.vehicleId] || { total: 2500, booked: 0 };
-    const remaining = cap.total - cap.booked;
-    
-    if (data.quantityKg > remaining) {
-      throw new Error(`Overbooking prevented. Only ${remaining.toLocaleString()} kg capacity remains on this vehicle.`);
+    // Verify Capacity for all allocations
+    for (const alloc of data.vehicleAllocations) {
+      const cap = VEHICLE_CAPACITIES[alloc.vehicleId] || { total: 2500, booked: 0 };
+      const remaining = cap.total - cap.booked;
+      if (alloc.quantityKg > remaining) {
+        throw new Error(`Overbooking prevented. Only ${remaining.toLocaleString()} kg capacity remains on vehicle ${alloc.vehicleId}.`);
+      }
     }
 
     // Reserve Capacity
-    if (VEHICLE_CAPACITIES[data.vehicleId]) {
-      VEHICLE_CAPACITIES[data.vehicleId].booked += data.quantityKg;
+    for (const alloc of data.vehicleAllocations) {
+      if (VEHICLE_CAPACITIES[alloc.vehicleId]) {
+        VEHICLE_CAPACITIES[alloc.vehicleId].booked += alloc.quantityKg;
+      }
     }
 
     const bookingId = `BKG-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -109,7 +114,7 @@ export const createBookingHold = createServerFn({ method: "POST" })
       quantityKg: data.quantityKg,
       quality: data.quality,
       destination: data.destination,
-      vehicleId: data.vehicleId,
+      vehicleAllocations: data.vehicleAllocations,
       platformFee: data.platformFee,
       expectedNetRealization: data.expectedNetRealization,
       status: "BOOKING_HELD",
@@ -135,9 +140,11 @@ export const cancelBooking = createServerFn({ method: "POST" })
     if (record) {
       if (record.status !== "CANCELLED_BY_FARMER" && record.status !== "CANCELLED_PAYMENT_TIMEOUT" && record.status !== "EXPIRED") {
         // Release capacity
-        if (VEHICLE_CAPACITIES[record.vehicleId]) {
-          VEHICLE_CAPACITIES[record.vehicleId].booked -= record.quantityKg;
-        }
+        record.vehicleAllocations.forEach(alloc => {
+          if (VEHICLE_CAPACITIES[alloc.vehicleId]) {
+            VEHICLE_CAPACITIES[alloc.vehicleId].booked -= alloc.quantityKg;
+          }
+        });
       }
       record.status = "CANCELLED_BY_FARMER";
       return record;
