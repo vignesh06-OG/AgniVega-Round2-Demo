@@ -10,8 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { rupees } from "@/lib/krishi/constants";
 import {
   addVehicle,
@@ -134,7 +148,7 @@ function FleetPortal() {
     onSuccess: () => {
       toast.success("Dispatch overridden to new vehicle.");
       invalidate();
-    }
+    },
   });
 
   return (
@@ -291,11 +305,19 @@ function FleetPortal() {
                         onChange={(e) => setOverrideVehicle(e.target.value)}
                       >
                         <option value="">Select Replacement</option>
-                        {fleet.data.vehicles.filter((v: any) => v.status === "available").map((v: any) => (
-                          <option key={v.id} value={v.registration}>{v.registration} ({v.vehicle_types?.name})</option>
-                        ))}
+                        {fleet.data.vehicles
+                          .filter((v: any) => v.status === "available")
+                          .map((v: any) => (
+                            <option key={v.id} value={v.registration}>
+                              {v.registration} ({v.vehicle_types?.name})
+                            </option>
+                          ))}
                       </select>
-                      <Button size="sm" disabled={!overrideVehicle || overrideVehicle === t.vehicle.registration} onClick={() => overrideMutation.mutate(t.id)}>
+                      <Button
+                        size="sm"
+                        disabled={!overrideVehicle || overrideVehicle === t.vehicle.registration}
+                        onClick={() => overrideMutation.mutate(t.id)}
+                      >
                         Apply
                       </Button>
                     </div>
@@ -331,7 +353,7 @@ function FleetPortal() {
             </Card>
           </>
         )}
-        
+
         <Dialog open={!!diagnosticOpen} onOpenChange={(open) => !open && setDiagnosticOpen(null)}>
           <DialogContent>
             <DialogHeader>

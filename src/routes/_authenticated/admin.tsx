@@ -210,9 +210,13 @@ function AdminPortal() {
               >
                 <div className="flex flex-col">
                   <span className="font-semibold">{row.name}</span>
-                  <span className="text-sm text-muted-foreground">{row.id} · {row.role}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {row.id} · {row.role}
+                  </span>
                 </div>
-                <Badge variant={row.status === "ACTIVE" ? "default" : "destructive"}>{row.status}</Badge>
+                <Badge variant={row.status === "ACTIVE" ? "default" : "destructive"}>
+                  {row.status}
+                </Badge>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -238,18 +242,19 @@ function AdminPortal() {
                 <div className="flex flex-col flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{row.id}</span>
-                    <Badge variant={row.status === "OPEN" ? "default" : "secondary"}>{row.status}</Badge>
+                    <Badge variant={row.status === "OPEN" ? "default" : "secondary"}>
+                      {row.status}
+                    </Badge>
                     {row.priority === "URGENT" && <Badge variant="destructive">URGENT</Badge>}
                   </div>
                   <span className="text-sm mt-1">{row.subject}</span>
-                  <span className="text-xs text-muted-foreground mt-1">Reported by: {row.user}</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Reported by: {row.user}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   {row.status === "OPEN" && (
-                    <Button
-                      size="sm"
-                      onClick={() => resolveTicketMut.mutate(row.id)}
-                    >
+                    <Button size="sm" onClick={() => resolveTicketMut.mutate(row.id)}>
                       Resolve
                     </Button>
                   )}
@@ -484,11 +489,11 @@ function AnimatedLiveMap() {
     mandi: true,
     pickup: true,
     partner: true,
-    driver: true
+    driver: true,
   });
 
   const toggleNode = (kind: string) => {
-    setVisibleNodes(prev => ({ ...prev, [kind]: !prev[kind] }));
+    setVisibleNodes((prev) => ({ ...prev, [kind]: !prev[kind] }));
   };
 
   const allPoints = [
@@ -507,34 +512,34 @@ function AnimatedLiveMap() {
   return (
     <div className="space-y-4">
       <div className="flex gap-4 text-sm text-muted-foreground justify-center flex-wrap">
-        <button 
-          onClick={() => toggleNode('pickup')}
-          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.pickup ? 'bg-secondary' : 'opacity-50'}`}
+        <button
+          onClick={() => toggleNode("pickup")}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.pickup ? "bg-secondary" : "opacity-50"}`}
         >
           <span className="h-3 w-3 rounded-full bg-[#1B4332]"></span> Primary Pickup
         </button>
-        <button 
-          onClick={() => toggleNode('partner')}
-          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.partner ? 'bg-secondary' : 'opacity-50'}`}
+        <button
+          onClick={() => toggleNode("partner")}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.partner ? "bg-secondary" : "opacity-50"}`}
         >
           <span className="h-3 w-3 rounded-full bg-[#2D6A4F]"></span> Pooled Partners
         </button>
-        <button 
-          onClick={() => toggleNode('mandi')}
-          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.mandi ? 'bg-secondary' : 'opacity-50'}`}
+        <button
+          onClick={() => toggleNode("mandi")}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.mandi ? "bg-secondary" : "opacity-50"}`}
         >
           <span className="h-3 w-3 rounded-full bg-[#E9C46A]"></span> Mandi
         </button>
-        <button 
-          onClick={() => toggleNode('driver')}
-          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.driver ? 'bg-secondary' : 'opacity-50'}`}
+        <button
+          onClick={() => toggleNode("driver")}
+          className={`flex items-center gap-1 px-3 py-1 rounded-full border transition-colors ${visibleNodes.driver ? "bg-secondary" : "opacity-50"}`}
         >
           <span className="h-3 w-3 rounded-full bg-[#B23A48]"></span> Driver
         </button>
       </div>
       <LiveMap
         height={500}
-        points={allPoints.filter(p => visibleNodes[p.kind as keyof typeof visibleNodes]) as any}
+        points={allPoints.filter((p) => visibleNodes[p.kind as keyof typeof visibleNodes]) as any}
         route={routePoints}
       />
     </div>

@@ -41,7 +41,7 @@ const DICT = {
     average: "सामान्य",
     poor: "खराब",
     none: "नाही",
-  }
+  },
 };
 
 export function QualityForm({ value, onChange, lang }: QualityFormProps) {

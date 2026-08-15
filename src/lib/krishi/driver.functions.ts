@@ -40,7 +40,7 @@ export const upsertDriverProfile = createServerFn({ method: "POST" })
 import { DEMO_ENR_RESULTS, DEMO_POOL_PARTNERS, DEMO_WINNER } from "./canonical-demo";
 
 // Mock Database for Driver Trips
-let TRIPS: any[] = [
+const TRIPS: any[] = [
   {
     id: "trip-1",
     mandis: { name: DEMO_WINNER.mandiName },
@@ -48,7 +48,7 @@ let TRIPS: any[] = [
     total_distance_km: DEMO_WINNER.distanceKm,
     trip_stops: [{}, {}, {}, {}], // 1 pickup + 3 partners
     status: "ACTIVE",
-  }
+  },
 ];
 
 export const listAvailableLoads = createServerFn({ method: "GET" }).handler(async () => {
