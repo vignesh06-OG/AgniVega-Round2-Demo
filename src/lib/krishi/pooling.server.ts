@@ -1,4 +1,4 @@
-import { PLATFORM, recommendVehicleFromTypes } from "./vehicle-select";
+import { PLATFORM, allocateVehicles, type VehicleInstance } from "./vehicle-select";
 import { sequenceStops, type LatLng } from "./geo";
 import {
   dieselBreakdown,
@@ -40,7 +40,7 @@ export interface ComputeInput {
     queueMinutes: number;
     pricePerKg: number;
   }[];
-  vehicles: VehicleProfile[];
+  vehicleInstances: VehicleInstance[];
   commissionPercent: number;
   fuel: FuelRates;
   demoMode: boolean;
@@ -76,12 +76,18 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
     const soloMin = matrix.durationsMin[0]?.[mandiIdx] ?? 0;
 
     /* ---- Solo scenario ---- */
-    const soloAllocations = recommendVehicleFromTypes(input.vehicles, input.weightKg);
-    const soloVehicleName = soloAllocations.length > 1 
-      ? `${soloAllocations.length} Vehicles`
-      : (soloAllocations[0]?.vehicle.name ?? "Unknown");
-      
-    const soloFreight = soloAllocations.reduce((sum, alloc) => sum + tripFreightCost(alloc.vehicle, soloKm, input.fuel), 0);
+    /* ---- Solo scenario ---- */
+    const routeVehicles = input.vehicleInstances.filter((v) => v.routeId === mandi.id);
+    const soloAllocations = allocateVehicles(routeVehicles, input.weightKg);
+    const soloVehicleName =
+      soloAllocations.length > 1
+        ? `${soloAllocations.length} Vehicles`
+        : (soloAllocations[0]?.instance.profile.name ?? "Unknown");
+
+    const soloFreight = soloAllocations.reduce(
+      (sum, alloc) => sum + tripFreightCost(alloc.instance.profile, soloKm, input.fuel),
+      0,
+    );
     const soloRisk = spoilageRisk(
       input.spoilageHours,
       soloKm,
@@ -109,12 +115,16 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
       pooledMin += subDur[order[i]!]?.[order[i + 1]!] ?? 0;
     }
 
-    const poolAllocations = recommendVehicleFromTypes(input.vehicles, pooledWeight);
-    const poolVehicleName = poolAllocations.length > 1 
-      ? `${poolAllocations.length} Vehicles`
-      : (poolAllocations[0]?.vehicle.name ?? "Unknown");
-      
-    const pooledFreight = poolAllocations.reduce((sum, alloc) => sum + tripFreightCost(alloc.vehicle, pooledKm, input.fuel), 0);
+    const poolAllocations = allocateVehicles(routeVehicles, pooledWeight);
+    const poolVehicleName =
+      poolAllocations.length > 1
+        ? `${poolAllocations.length} Vehicles`
+        : (poolAllocations[0]?.instance.profile.name ?? "Unknown");
+
+    const pooledFreight = poolAllocations.reduce(
+      (sum, alloc) => sum + tripFreightCost(alloc.instance.profile, pooledKm, input.fuel),
+      0,
+    );
     const legs = [
       { id: input.requestId, weightKg: input.weightKg, distanceKm: soloKm },
       ...input.partners.map((p) => ({
@@ -143,11 +153,25 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
       risk.valueAtRisk,
     );
 
-    const soloLitres = soloAllocations.reduce((sum, alloc) => sum + dieselBreakdown(alloc.vehicle, soloKm, input.fuel).litres, 0) * (1 + input.partners.length);
-    const pooledLitres = poolAllocations.reduce((sum, alloc) => sum + dieselBreakdown(alloc.vehicle, pooledKm, input.fuel).litres, 0);
-    
-    const pooledUtilisation = poolAllocations.reduce((sum, alloc) => sum + alloc.vehicle.payloadKg, 0);
-    const soloUtilisation = soloAllocations.reduce((sum, alloc) => sum + alloc.vehicle.payloadKg, 0);
+    const soloLitres =
+      soloAllocations.reduce(
+        (sum, alloc) => sum + dieselBreakdown(alloc.instance.profile, soloKm, input.fuel).litres,
+        0,
+      ) *
+      (1 + input.partners.length);
+    const pooledLitres = poolAllocations.reduce(
+      (sum, alloc) => sum + dieselBreakdown(alloc.instance.profile, pooledKm, input.fuel).litres,
+      0,
+    );
+
+    const pooledUtilisation = poolAllocations.reduce(
+      (sum, alloc) => sum + alloc.instance.profile.payloadKg,
+      0,
+    );
+    const soloUtilisation = soloAllocations.reduce(
+      (sum, alloc) => sum + alloc.instance.profile.payloadKg,
+      0,
+    );
 
     return {
       mandiId: mandi.id,
@@ -164,7 +188,15 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
         spoilageLoss: Math.round(pooledEarnings.spoilageLoss),
         netPayout: Math.round(pooledEarnings.netPayout),
         vehicle: poolVehicleName,
-        vehicles: poolAllocations.map(a => ({ id: a.vehicle.id || a.vehicle.slug, name: a.vehicle.name, allocatedKg: a.allocatedKg, maxCapacityKg: a.vehicle.payloadKg })),
+        vehicles: poolAllocations.map((a) => ({
+          id: a.instance.id,
+          name: a.instance.profile.name,
+          registrationNumber: a.instance.registrationNumber,
+          currentCommittedKg: a.instance.currentCommittedKg,
+          availableCapacityKg: a.instance.availableCapacityKg,
+          allocatedKg: a.allocatedKg,
+          maxCapacityKg: a.instance.profile.payloadKg,
+        })),
         poolPartners: input.partners.length,
         utilisationPercent: Math.round(utilisation(pooledWeight, pooledUtilisation) * 100),
         detourMinutes: Math.round(detourMinutes),
@@ -175,7 +207,15 @@ export async function computeOptions(input: ComputeInput): Promise<CalculationRe
         spoilageLoss: Math.round(soloEarnings.spoilageLoss),
         netPayout: Math.round(soloEarnings.netPayout),
         vehicle: soloVehicleName,
-        vehicles: soloAllocations.map(a => ({ id: a.vehicle.id || a.vehicle.slug, name: a.vehicle.name, allocatedKg: a.allocatedKg, maxCapacityKg: a.vehicle.payloadKg })),
+        vehicles: soloAllocations.map((a) => ({
+          id: a.instance.id,
+          name: a.instance.profile.name,
+          registrationNumber: a.instance.registrationNumber,
+          currentCommittedKg: a.instance.currentCommittedKg,
+          availableCapacityKg: a.instance.availableCapacityKg,
+          allocatedKg: a.allocatedKg,
+          maxCapacityKg: a.instance.profile.payloadKg,
+        })),
         utilisationPercent: Math.round(utilisation(input.weightKg, soloUtilisation) * 100),
       },
       savings: Math.round(pooledEarnings.netPayout - soloEarnings.netPayout),

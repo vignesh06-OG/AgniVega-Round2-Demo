@@ -1,5 +1,13 @@
+import * as React from "react";
 import { useState } from "react";
-import { Camera, Image as ImageIcon, Loader2, CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import {
+  Camera,
+  Image as ImageIcon,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,22 +48,25 @@ const DICT = {
     aiUnavailable: "AI विश्लेषणासाठी OPENAI_VISION_API_KEY आवश्यक आहे. कृपया स्वतः माहिती भरा.",
     manualEntry: "कृपया गुणवत्ता स्वतः घोषित करा:",
     save: "माहिती जतन करा",
-  }
+  },
 };
 
 export function AIUploadMock({ onComplete, lang, crop }: AIUploadMockProps) {
   const t = DICT[lang] || DICT.en;
-  
+
   const [state, setState] = useState<"idle" | "processing" | "uploaded">("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [qualityData, setQualityData] = useState<QualityData>({ visualGrade: "Good", moistureEstimate: "Medium" });
+  const [qualityData, setQualityData] = useState<QualityData>({
+    visualGrade: "Good",
+    moistureEstimate: "Medium",
+  });
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setState("processing");
       const url = URL.createObjectURL(file);
-      
+
       // Simulate slight delay for processing
       setTimeout(() => {
         setPreviewUrl(url);
@@ -69,7 +80,7 @@ export function AIUploadMock({ onComplete, lang, crop }: AIUploadMockProps) {
   };
 
   const handleFieldChange = (field: string, value: string) => {
-    setQualityData(prev => ({ ...prev, [field]: value }));
+    setQualityData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -86,14 +97,33 @@ export function AIUploadMock({ onComplete, lang, crop }: AIUploadMockProps) {
             </div>
             <div className="flex justify-center gap-3">
               <div className="relative">
-                <Input id="camera-upload" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleUpload} />
-                <Label htmlFor="camera-upload" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                <Input
+                  id="camera-upload"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleUpload}
+                />
+                <Label
+                  htmlFor="camera-upload"
+                  className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
                   <Camera className="mr-2 h-4 w-4" /> {t.takePhoto}
                 </Label>
               </div>
               <div className="relative">
-                <Input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-                <Label htmlFor="file-upload" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                <Input
+                  id="file-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleUpload}
+                />
+                <Label
+                  htmlFor="file-upload"
+                  className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
                   <ImageIcon className="mr-2 h-4 w-4" /> {t.uploadFile}
                 </Label>
               </div>
@@ -122,7 +152,10 @@ export function AIUploadMock({ onComplete, lang, crop }: AIUploadMockProps) {
                   <CheckCircle2 className="h-5 w-5" />
                   {t.success}
                 </div>
-                <button onClick={() => setState("idle")} className="text-sm text-primary hover:underline text-left mt-1">
+                <button
+                  onClick={() => setState("idle")}
+                  className="text-sm text-primary hover:underline text-left mt-1"
+                >
                   {lang === "en" ? "Retake Photo" : "पुन्हा फोटो काढा"}
                 </button>
               </div>
@@ -136,13 +169,15 @@ export function AIUploadMock({ onComplete, lang, crop }: AIUploadMockProps) {
             <div className="pt-2">
               <p className="font-semibold text-sm mb-3">{t.manualEntry}</p>
               <div className="space-y-3">
-                {crop.qualityParams?.map(param => (
+                {crop.qualityParams?.map((param) => (
                   <div key={param} className="space-y-1">
-                    <Label className="capitalize text-xs text-muted-foreground">{param.replace("_", " ")}</Label>
-                    <select 
+                    <Label className="capitalize text-xs text-muted-foreground">
+                      {param.replace("_", " ")}
+                    </Label>
+                    <select
                       className="w-full text-sm border-b pb-1 focus:outline-none focus:border-primary capitalize bg-transparent"
                       value={qualityData[param] || "medium"}
-                      onChange={e => handleFieldChange(param, e.target.value)}
+                      onChange={(e) => handleFieldChange(param, e.target.value)}
                     >
                       <option value="high">High / उत्तम</option>
                       <option value="medium">Medium / मध्यम</option>
@@ -152,7 +187,7 @@ export function AIUploadMock({ onComplete, lang, crop }: AIUploadMockProps) {
                 ))}
               </div>
             </div>
-            
+
             <Button onClick={handleSave} className="w-full mt-4">
               {t.save}
             </Button>

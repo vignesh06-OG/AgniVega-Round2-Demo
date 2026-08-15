@@ -60,7 +60,7 @@ function expireOldBookings() {
     if (b.status === "BOOKING_HELD" && b.expiresAt && now > b.expiresAt) {
       b.status = "CANCELLED_PAYMENT_TIMEOUT";
       // Release capacity
-      b.vehicleAllocations.forEach(alloc => {
+      b.vehicleAllocations.forEach((alloc) => {
         if (VEHICLE_CAPACITIES[alloc.vehicleId]) {
           VEHICLE_CAPACITIES[alloc.vehicleId].booked -= alloc.quantityKg;
         }
@@ -92,7 +92,9 @@ export const createBookingHold = createServerFn({ method: "POST" })
       const cap = VEHICLE_CAPACITIES[alloc.vehicleId] || { total: 2500, booked: 0 };
       const remaining = cap.total - cap.booked;
       if (alloc.quantityKg > remaining) {
-        throw new Error(`Overbooking prevented. Only ${remaining.toLocaleString()} kg capacity remains on vehicle ${alloc.vehicleId}.`);
+        throw new Error(
+          `Overbooking prevented. Only ${remaining.toLocaleString()} kg capacity remains on vehicle ${alloc.vehicleId}.`,
+        );
       }
     }
 
@@ -105,7 +107,7 @@ export const createBookingHold = createServerFn({ method: "POST" })
 
     const bookingId = `BKG-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const dispatchId = `DSP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    
+
     const record: BookingRecord = {
       bookingId,
       dispatchId,
@@ -138,9 +140,13 @@ export const cancelBooking = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const record = BOOKINGS[data.bookingId];
     if (record) {
-      if (record.status !== "CANCELLED_BY_FARMER" && record.status !== "CANCELLED_PAYMENT_TIMEOUT" && record.status !== "EXPIRED") {
+      if (
+        record.status !== "CANCELLED_BY_FARMER" &&
+        record.status !== "CANCELLED_PAYMENT_TIMEOUT" &&
+        record.status !== "EXPIRED"
+      ) {
         // Release capacity
-        record.vehicleAllocations.forEach(alloc => {
+        record.vehicleAllocations.forEach((alloc) => {
           if (VEHICLE_CAPACITIES[alloc.vehicleId]) {
             VEHICLE_CAPACITIES[alloc.vehicleId].booked -= alloc.quantityKg;
           }
@@ -159,7 +165,7 @@ export const confirmPayment = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     expireOldBookings();
     const record = BOOKINGS[data.bookingId];
-    
+
     if (!record) throw new Error("Booking not found");
     if (record.status === "CANCELLED_PAYMENT_TIMEOUT") {
       throw new Error("Booking expired due to payment timeout");
@@ -175,6 +181,6 @@ export const getBookingsByFarmer = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     expireOldBookings();
     return Object.values(BOOKINGS)
-      .filter(b => b.farmerId === data.farmerId)
+      .filter((b) => b.farmerId === data.farmerId)
       .sort((a, b) => b.createdAt - a.createdAt);
   });

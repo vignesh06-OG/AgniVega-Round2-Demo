@@ -69,12 +69,13 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
   const [search, setSearch] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
-  const categories = Array.from(new Set(crops.map(c => c.category))).filter(Boolean) as string[];
+  const categories = Array.from(new Set(crops.map((c) => c.category))).filter(Boolean) as string[];
 
   const filteredCrops = crops.filter((crop) => {
     const name = cropName(crop, lang).toLowerCase();
     const englishName = crop.name_en?.toLowerCase() || "";
-    const matchesSearch = name.includes(search.toLowerCase()) || englishName.includes(search.toLowerCase());
+    const matchesSearch =
+      name.includes(search.toLowerCase()) || englishName.includes(search.toLowerCase());
     const matchesCategory = selectedCategory ? crop.category === selectedCategory : true;
     return matchesSearch && matchesCategory;
   });
@@ -99,18 +100,22 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
               onClick={() => setSelectedCategory(null)}
               className={cn(
                 "px-3 py-1 text-xs rounded-full border transition-colors",
-                !selectedCategory ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+                !selectedCategory
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background hover:bg-muted",
               )}
             >
               {lang === "en" ? "All" : "सर्व"}
             </button>
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={cn(
                   "px-3 py-1 text-xs rounded-full border transition-colors capitalize",
-                  selectedCategory === cat ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+                  selectedCategory === cat
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background hover:bg-muted",
                 )}
               >
                 {cat.replace("_", " ")}
@@ -119,7 +124,7 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
           </div>
         </div>
       )}
-      
+
       {filteredCrops.length <= 8 ? (
         <div
           className="grid gap-3"
@@ -192,7 +197,10 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
                 )}
               >
                 {crop.isHighDemand && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" title={lang === "en" ? "High Demand" : "जास्त मागणी"} />
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"
+                    title={lang === "en" ? "High Demand" : "जास्त मागणी"}
+                  />
                 )}
                 <span className="text-2xl shrink-0 ml-1">{cropIcon(crop.slug)}</span>
                 <div className="flex flex-col">
@@ -218,7 +226,7 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
           })}
         </div>
       )}
-      
+
       {filteredCrops.length === 0 && (
         <div className="text-center py-4 text-sm text-muted-foreground">
           {lang === "en" ? "No crops found." : "कोणतेही पीक आढळले नाही."}

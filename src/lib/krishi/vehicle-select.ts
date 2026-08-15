@@ -31,9 +31,24 @@ export interface VehicleAllocation {
   allocatedKg: number;
 }
 
-/** 
- * Recommends one or more vehicles to carry the payload. 
+export interface VehicleInstance {
+  id: string; // e.g., MH-15-XY-1234
+  registrationNumber: string;
+  profile: VehicleProfile;
+  currentCommittedKg: number;
+  availableCapacityKg: number; // profile.payloadKg - currentCommittedKg
+  routeId?: string; // Optional: tie to a specific mandi/route
+}
+
+export interface InstanceAllocation {
+  instance: VehicleInstance;
+  allocatedKg: number;
+}
+
+/**
+ * Recommends one or more vehicles to carry the payload.
  * If weight exceeds the largest vehicle, it splits the load.
+ * NOTE: This is the old type-based allocation.
  */
 export function recommendVehicleFromTypes(
   vehicles: VehicleProfile[],
@@ -47,14 +62,56 @@ export function recommendVehicleFromTypes(
   let remaining = weightKg;
 
   while (remaining > 0) {
-    const nextVehicle = sorted.slice().reverse().find((v) => v.payloadKg >= remaining);
-    
+    const nextVehicle = sorted
+      .slice()
+      .reverse()
+      .find((v) => v.payloadKg >= remaining);
+
     if (nextVehicle) {
       allocations.push({ vehicle: nextVehicle, allocatedKg: remaining });
       remaining = 0;
     } else {
       allocations.push({ vehicle: largest, allocatedKg: largest.payloadKg });
       remaining -= largest.payloadKg;
+    }
+  }
+
+  return allocations;
+}
+
+/**
+ * Recommends vehicles from specific instances.
+ * Prioritizes vehicles with the largest available capacity to minimize the number of vehicles used.
+ */
+export function allocateVehicles(
+  instances: VehicleInstance[],
+  weightKg: number,
+): InstanceAllocation[] {
+  // Sort by available capacity descending to minimize number of vehicles
+  const sorted = [...instances].sort((a, b) => b.availableCapacityKg - a.availableCapacityKg);
+  const allocations: InstanceAllocation[] = [];
+  let remaining = weightKg;
+
+  for (const instance of sorted) {
+    if (remaining <= 0) break;
+    if (instance.availableCapacityKg <= 0) continue;
+
+    const allocateAmount = Math.min(remaining, instance.availableCapacityKg);
+    allocations.push({ instance, allocatedKg: allocateAmount });
+    remaining -= allocateAmount;
+  }
+
+  // If there's still remaining weight, it means we don't have enough capacity
+  // in the available fleet for this specific route/pool.
+  // In a real app, this might fallback to on-demand un-pooled trucks or fail.
+  // For demo, we will just allocate the overflow to the largest truck to avoid blocking.
+  if (remaining > 0 && sorted.length > 0) {
+    const largest = sorted[0];
+    const existingAlloc = allocations.find((a) => a.instance.id === largest.id);
+    if (existingAlloc) {
+      existingAlloc.allocatedKg += remaining;
+    } else {
+      allocations.push({ instance: largest, allocatedKg: remaining });
     }
   }
 

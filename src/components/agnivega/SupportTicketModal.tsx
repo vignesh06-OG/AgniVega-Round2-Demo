@@ -1,9 +1,23 @@
+import * as React from "react";
 import { useState } from "react";
 import { HeadphonesIcon, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 interface SupportTicketModalProps {
@@ -28,8 +42,8 @@ const DICT = {
       qty_issue: "Quantity / load issue",
       route_issue: "Route issue",
       payment: "Payment issue",
-      other: "Other"
-    }
+      other: "Other",
+    },
   },
   mr: {
     btn: "AgniVega सपोर्टशी संपर्क साधा",
@@ -45,14 +59,19 @@ const DICT = {
       qty_issue: "प्रमाण / लोड समस्या",
       route_issue: "रस्त्याची समस्या",
       payment: "पेमेंट समस्या",
-      other: "इतर"
-    }
-  }
-}
+      other: "इतर",
+    },
+  },
+};
 
-export function SupportTicketModal({ bookingId, lang, isOpen: externalOpen, onOpenChange: externalSetOpen }: SupportTicketModalProps) {
+export function SupportTicketModal({
+  bookingId,
+  lang,
+  isOpen: externalOpen,
+  onOpenChange: externalSetOpen,
+}: SupportTicketModalProps) {
   const t = DICT[lang] || DICT.en;
-  
+
   const [internalOpen, setInternalOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [category, setCategory] = useState("");
@@ -60,13 +79,14 @@ export function SupportTicketModal({ bookingId, lang, isOpen: externalOpen, onOp
 
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (v: boolean) => {
-    externalSetOpen ? externalSetOpen(v) : setInternalOpen(v);
+    if (externalSetOpen) externalSetOpen(v);
+    else setInternalOpen(v);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !desc) return;
-    
+
     // Simulate API call
     setSubmitted(true);
     setTimeout(() => {
@@ -80,7 +100,10 @@ export function SupportTicketModal({ bookingId, lang, isOpen: externalOpen, onOp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100">
+        <Button
+          variant="outline"
+          className="w-full text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
+        >
           <HeadphonesIcon className="mr-2 h-4 w-4" />
           {t.btn}
         </Button>
@@ -104,14 +127,16 @@ export function SupportTicketModal({ bookingId, lang, isOpen: externalOpen, onOp
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(t.issues).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t.detailsLabel}</Label>
-                <Textarea 
+                <Textarea
                   placeholder={t.placeholder}
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
