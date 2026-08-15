@@ -80,7 +80,106 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
     return matchesSearch && matchesCategory;
   });
 
-  // For ≤8 crops (or filtered): icon tiles. For more: compact list.
+  const isSearching = search.length > 0 || selectedCategory !== null;
+
+  const featuredCrops = crops.filter(c => c.isHighDemand || c.season === "Kharif"); // Assuming some seasonal logic
+  const allOtherCrops = crops.filter(c => !featuredCrops.includes(c));
+
+  const renderCropTile = (crop: Crop) => {
+    const isSelected = crop.id === selectedId;
+    const colors = CROP_COLORS[crop.slug] ?? DEFAULT_COLOR;
+    return (
+      <button
+        key={crop.id}
+        id={`crop-tile-${crop.id}`}
+        type="button"
+        role="radio"
+        aria-checked={isSelected}
+        onClick={() => onChange(crop.id)}
+        className={cn(
+          "relative flex min-h-[90px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-3 text-center transition-all",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+          colors.bg,
+          isSelected
+            ? `${colors.border} ring-2 ring-primary shadow-md scale-105`
+            : `border-transparent hover:${colors.border} hover:shadow-sm`,
+        )}
+      >
+        {crop.isHighDemand && (
+          <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+            {lang === "en" ? "HIGH DEMAND" : "जास्त मागणी"}
+          </span>
+        )}
+        <span className="text-3xl leading-none" aria-hidden="true">
+          {cropIcon(crop.slug)}
+        </span>
+        <span className={cn("text-xs font-semibold leading-tight", colors.text)}>
+          {cropName(crop, lang)}
+        </span>
+        {crop.perishable && (
+          <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-700 leading-tight">
+            ⏱ {crop.spoilage_hours}h
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  const renderCropList = (cropList: Crop[]) => (
+    <div
+      className="grid gap-1.5 max-h-64 overflow-y-auto pr-1"
+      role="listbox"
+      aria-label="Select crop"
+    >
+      {cropList.map((crop) => {
+        const isSelected = crop.id === selectedId;
+        return (
+          <button
+            key={crop.id}
+            id={`crop-list-${crop.id}`}
+            type="button"
+            role="option"
+            aria-selected={isSelected}
+            onClick={() => onChange(crop.id)}
+            className={cn(
+              "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors relative overflow-hidden",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              isSelected
+                ? "border-primary bg-primary/10 font-semibold"
+                : "border-border hover:bg-secondary/50",
+            )}
+          >
+            {crop.isHighDemand && (
+              <div
+                className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"
+                title={lang === "en" ? "High Demand" : "जास्त मागणी"}
+              />
+            )}
+            <span className="text-2xl shrink-0 ml-1">{cropIcon(crop.slug)}</span>
+            <div className="flex flex-col">
+              <span className="text-sm">
+                {cropName(crop, lang)}
+                {crop.isHighDemand && (
+                  <span className="ml-2 inline-block bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+                    HOT
+                  </span>
+                )}
+              </span>
+              <span className="text-[10px] text-muted-foreground capitalize">
+                {crop.category.replace("_", " ")} • {crop.season}
+              </span>
+            </div>
+            {crop.perishable && (
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {crop.spoilage_hours}h
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {crops.length > 8 && (
@@ -125,111 +224,41 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
         </div>
       )}
 
-      {filteredCrops.length <= 8 ? (
-        <div
-          className="grid gap-3"
-          style={{ gridTemplateColumns: `repeat(${Math.min(filteredCrops.length, 4)}, 1fr)` }}
-          role="radiogroup"
-          aria-label="Select crop"
-        >
-          {filteredCrops.map((crop) => {
-            const isSelected = crop.id === selectedId;
-            const colors = CROP_COLORS[crop.slug] ?? DEFAULT_COLOR;
-            return (
-              <button
-                key={crop.id}
-                id={`crop-tile-${crop.id}`}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => onChange(crop.id)}
-                className={cn(
-                  "relative flex min-h-[90px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-3 text-center transition-all",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                  colors.bg,
-                  isSelected
-                    ? `${colors.border} ring-2 ring-primary shadow-md scale-105`
-                    : `border-transparent hover:${colors.border} hover:shadow-sm`,
-                )}
-              >
-                {crop.isHighDemand && (
-                  <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
-                    {lang === "en" ? "HIGH DEMAND" : "जास्त मागणी"}
-                  </span>
-                )}
-                <span className="text-3xl leading-none" aria-hidden="true">
-                  {cropIcon(crop.slug)}
-                </span>
-                <span className={cn("text-xs font-semibold leading-tight", colors.text)}>
-                  {cropName(crop, lang)}
-                </span>
-                {crop.perishable && (
-                  <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-700 leading-tight">
-                    ⏱ {crop.spoilage_hours}h
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {isSearching ? (
+        filteredCrops.length === 0 ? (
+          <div className="text-center py-4 text-sm text-muted-foreground">
+            {lang === "en" ? "No crops found." : "कोणतेही पीक आढळले नाही."}
+          </div>
+        ) : (
+          renderCropList(filteredCrops)
+        )
       ) : (
-        <div
-          className="grid gap-1.5 max-h-64 overflow-y-auto pr-1"
-          role="listbox"
-          aria-label="Select crop"
-        >
-          {filteredCrops.map((crop) => {
-            const isSelected = crop.id === selectedId;
-            return (
-              <button
-                key={crop.id}
-                id={`crop-list-${crop.id}`}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => onChange(crop.id)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors relative overflow-hidden",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                  isSelected
-                    ? "border-primary bg-primary/10 font-semibold"
-                    : "border-border hover:bg-secondary/50",
-                )}
-              >
-                {crop.isHighDemand && (
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"
-                    title={lang === "en" ? "High Demand" : "जास्त मागणी"}
-                  />
-                )}
-                <span className="text-2xl shrink-0 ml-1">{cropIcon(crop.slug)}</span>
-                <div className="flex flex-col">
-                  <span className="text-sm">
-                    {cropName(crop, lang)}
-                    {crop.isHighDemand && (
-                      <span className="ml-2 inline-block bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold">
-                        HOT
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground capitalize">
-                    {crop.category.replace("_", " ")} • {crop.season}
-                  </span>
-                </div>
-                {crop.perishable && (
-                  <span className="ml-auto text-[10px] text-muted-foreground">
-                    {crop.spoilage_hours}h
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">
+                {lang === "en" ? "Featured for this Season" : "आजचे / हंगामातील प्रमुख पीक"}
+              </h3>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                {lang === "en" ? "Seasonal guidance (Demo)" : "हंगामी मार्गदर्शन (डेमो)"}
+              </p>
+            </div>
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: `repeat(${Math.min(featuredCrops.length, 4)}, 1fr)` }}
+              role="radiogroup"
+              aria-label="Featured crops"
+            >
+              {featuredCrops.map(renderCropTile)}
+            </div>
+          </div>
 
-      {filteredCrops.length === 0 && (
-        <div className="text-center py-4 text-sm text-muted-foreground">
-          {lang === "en" ? "No crops found." : "कोणतेही पीक आढळले नाही."}
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-foreground">
+              {lang === "en" ? "All Crops" : "सर्व पिके"}
+            </h3>
+            {renderCropList(allOtherCrops)}
+          </div>
         </div>
       )}
     </div>
