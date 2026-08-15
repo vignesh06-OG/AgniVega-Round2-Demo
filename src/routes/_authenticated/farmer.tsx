@@ -159,8 +159,20 @@ function FarmerFlow() {
   const [walletBalance, setWalletBalance] = useState<number>(4250);
   const [reservedAmount, setReservedAmount] = useState<number>(0);
   const [transactions, setTransactions] = useState<any[]>([
-    { id: 'tx-1', date: new Date(Date.now() - 86400000).toISOString(), desc: 'Wallet Recharge', amount: 5000, type: 'credit' },
-    { id: 'tx-2', date: new Date(Date.now() - 43200000).toISOString(), desc: 'Logistics / Platform Fee', amount: -750, type: 'debit' }
+    {
+      id: "tx-1",
+      date: new Date(Date.now() - 86400000).toISOString(),
+      desc: "Wallet Recharge",
+      amount: 5000,
+      type: "credit",
+    },
+    {
+      id: "tx-2",
+      date: new Date(Date.now() - 43200000).toISOString(),
+      desc: "Logistics / Platform Fee",
+      amount: -750,
+      type: "debit",
+    },
   ]);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -191,18 +203,23 @@ function FarmerFlow() {
       return () => clearInterval(timer);
     } else if (flowState === "CONFIRMED_EDITABLE" && countdown === 0) {
       setFlowState("LOCKED");
-      
+
       // Phase 7: Release Reservation on Expiry
-      const reservationAmount = Math.round((activeOption?.pooled.transportFee || 0) + (activeOption?.pooled.platformFee || 0));
-      setReservedAmount(prev => Math.max(0, prev - reservationAmount));
-      setWalletBalance(prev => prev + reservationAmount);
-      setTransactions(prev => [{
-        id: `tx-rel-exp-${Date.now()}`,
-        date: new Date().toISOString(),
-        desc: 'Released Reservation (Expired)',
-        amount: reservationAmount,
-        type: 'credit'
-      }, ...prev]);
+      const reservationAmount = Math.round(
+        (activeOption?.pooled.transportFee || 0) + (activeOption?.pooled.platformFee || 0),
+      );
+      setReservedAmount((prev) => Math.max(0, prev - reservationAmount));
+      setWalletBalance((prev) => prev + reservationAmount);
+      setTransactions((prev) => [
+        {
+          id: `tx-rel-exp-${Date.now()}`,
+          date: new Date().toISOString(),
+          desc: "Released Reservation (Expired)",
+          amount: reservationAmount,
+          type: "credit",
+        },
+        ...prev,
+      ]);
 
       toast.error(
         lang === "en"
@@ -311,30 +328,52 @@ function FarmerFlow() {
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                     <div>
-                      <p className="text-sm text-muted-foreground uppercase tracking-wide">{t.walletBalance}</p>
-                      <p className="text-3xl font-bold tabular-nums">₹{walletBalance.toLocaleString('en-IN')}</p>
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide">
+                        {t.walletBalance}
+                      </p>
+                      <p className="text-3xl font-bold tabular-nums">
+                        ₹{walletBalance.toLocaleString("en-IN")}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground uppercase tracking-wide">{t.reservedAmount}</p>
-                      <p className="text-3xl font-bold tabular-nums text-orange-600">₹{reservedAmount.toLocaleString('en-IN')}</p>
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide">
+                        {t.reservedAmount}
+                      </p>
+                      <p className="text-3xl font-bold tabular-nums text-orange-600">
+                        ₹{reservedAmount.toLocaleString("en-IN")}
+                      </p>
                     </div>
                     <div className="col-span-2 md:col-span-1 border-t md:border-t-0 pt-4 md:pt-0">
-                      <p className="text-sm text-muted-foreground uppercase tracking-wide">{t.availableAfterReservation}</p>
-                      <p className="text-3xl font-bold tabular-nums text-green-700">₹{(walletBalance - reservedAmount).toLocaleString('en-IN')}</p>
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide">
+                        {t.availableAfterReservation}
+                      </p>
+                      <p className="text-3xl font-bold tabular-nums text-green-700">
+                        ₹{(walletBalance - reservedAmount).toLocaleString("en-IN")}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="mt-6 pt-6 border-t border-primary/10">
                     <h3 className="text-sm font-semibold mb-3">{t.recentTransactions}</h3>
                     <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                      {transactions.map(tx => (
-                        <div key={tx.id} className="flex justify-between items-center text-sm p-3 bg-background/50 rounded border border-primary/10">
+                      {transactions.map((tx) => (
+                        <div
+                          key={tx.id}
+                          className="flex justify-between items-center text-sm p-3 bg-background/50 rounded border border-primary/10"
+                        >
                           <div>
                             <p className="font-medium">{tx.desc}</p>
-                            <p className="text-[10px] text-muted-foreground">{new Date(tx.date).toLocaleDateString()}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(tx.date).toLocaleDateString()}
+                            </p>
                           </div>
-                          <p className={cn("font-bold tabular-nums", tx.amount > 0 ? 'text-green-600' : 'text-slate-700')}>
-                            {tx.amount > 0 ? '+' : ''}₹{Math.abs(tx.amount).toLocaleString('en-IN')}
+                          <p
+                            className={cn(
+                              "font-bold tabular-nums",
+                              tx.amount > 0 ? "text-green-600" : "text-slate-700",
+                            )}
+                          >
+                            {tx.amount > 0 ? "+" : ""}₹{Math.abs(tx.amount).toLocaleString("en-IN")}
                           </p>
                         </div>
                       ))}
@@ -828,17 +867,22 @@ function FarmerFlow() {
                         expectedNetRealization: activeOption.pooled.netPayout,
                       },
                     });
-                    
-                    const reservationAmount = Math.round(activeOption.pooled.transportFee + activeOption.pooled.platformFee);
-                    setWalletBalance(prev => prev - reservationAmount);
-                    setReservedAmount(prev => prev + reservationAmount);
-                    setTransactions(prev => [{
-                      id: `tx-res-${Date.now()}`,
-                      date: new Date().toISOString(),
-                      desc: 'Booking Reservation (Held)',
-                      amount: -reservationAmount,
-                      type: 'debit'
-                    }, ...prev]);
+
+                    const reservationAmount = Math.round(
+                      activeOption.pooled.transportFee + activeOption.pooled.platformFee,
+                    );
+                    setWalletBalance((prev) => prev - reservationAmount);
+                    setReservedAmount((prev) => prev + reservationAmount);
+                    setTransactions((prev) => [
+                      {
+                        id: `tx-res-${Date.now()}`,
+                        date: new Date().toISOString(),
+                        desc: "Booking Reservation (Held)",
+                        amount: -reservationAmount,
+                        type: "debit",
+                      },
+                      ...prev,
+                    ]);
 
                     setBookingRecord(hold);
                     const remaining = Math.max(0, Math.floor((hold.expiresAt - Date.now()) / 1000));
@@ -897,19 +941,23 @@ function FarmerFlow() {
                         if (bookingRecord) {
                           try {
                             await cancelBookingFn({ data: { bookingId: bookingRecord.bookingId } });
-                            
+
                             // Phase 7: Release Reservation
-                            const reservationAmount = Math.round(activeOption.pooled.transportFee + activeOption.pooled.platformFee);
-                            setReservedAmount(prev => prev - reservationAmount);
-                            setWalletBalance(prev => prev + reservationAmount);
-                            setTransactions(prev => [{
-                              id: `tx-rel-${Date.now()}`,
-                              date: new Date().toISOString(),
-                              desc: 'Released Reservation (Cancelled)',
-                              amount: reservationAmount,
-                              type: 'credit'
-                            }, ...prev]);
-                            
+                            const reservationAmount = Math.round(
+                              activeOption.pooled.transportFee + activeOption.pooled.platformFee,
+                            );
+                            setReservedAmount((prev) => prev - reservationAmount);
+                            setWalletBalance((prev) => prev + reservationAmount);
+                            setTransactions((prev) => [
+                              {
+                                id: `tx-rel-${Date.now()}`,
+                                date: new Date().toISOString(),
+                                desc: "Released Reservation (Cancelled)",
+                                amount: reservationAmount,
+                                type: "credit",
+                              },
+                              ...prev,
+                            ]);
                           } catch (e) {
                             console.error("Failed to cancel booking:", e);
                           }
@@ -998,17 +1046,22 @@ function FarmerFlow() {
               const confirmed = await confirmPaymentFn({
                 data: { bookingId: bookingRecord.bookingId, paymentMethod: method },
               });
-              
+
               // Phase 7: Finalize Reservation
-              const reservationAmount = Math.round((activeOption?.pooled.transportFee || 0) + (activeOption?.pooled.platformFee || 0));
-              setReservedAmount(prev => Math.max(0, prev - reservationAmount));
-              setTransactions(prev => [{
-                id: `tx-pay-${Date.now()}`,
-                date: new Date().toISOString(),
-                desc: `Payment Confirmed (${method})`,
-                amount: 0,
-                type: 'debit'
-              }, ...prev]);
+              const reservationAmount = Math.round(
+                (activeOption?.pooled.transportFee || 0) + (activeOption?.pooled.platformFee || 0),
+              );
+              setReservedAmount((prev) => Math.max(0, prev - reservationAmount));
+              setTransactions((prev) => [
+                {
+                  id: `tx-pay-${Date.now()}`,
+                  date: new Date().toISOString(),
+                  desc: `Payment Confirmed (${method})`,
+                  amount: 0,
+                  type: "debit",
+                },
+                ...prev,
+              ]);
 
               setBookingRecord(confirmed);
               setFlowState("LOCKED");

@@ -82,8 +82,8 @@ export function CropSelector({ crops, selectedId, onChange, lang }: Props) {
 
   const isSearching = search.length > 0 || selectedCategory !== null;
 
-  const featuredCrops = crops.filter(c => c.isHighDemand || c.season === "Kharif"); // Assuming some seasonal logic
-  const allOtherCrops = crops.filter(c => !featuredCrops.includes(c));
+  const featuredCrops = crops.filter((c) => c.isHighDemand || c.season === "Kharif"); // Assuming some seasonal logic
+  const allOtherCrops = crops.filter((c) => !featuredCrops.includes(c));
 
   const renderCropTile = (crop: Crop) => {
     const isSelected = crop.id === selectedId;
