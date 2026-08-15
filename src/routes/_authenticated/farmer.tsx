@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import {
   Scale,
   MapPin,
@@ -196,6 +197,10 @@ function FarmerFlow() {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [selectedMandiId, setSelectedMandiId] = useState<string | null>(null);
 
+  // The active selection might override AI
+  const activeOption = result?.options.find((o) => o.mandiId === selectedMandiId) || result?.best;
+  const isOverride = activeOption?.mandiId !== result?.best.mandiId;
+
   // Countdown effect
   useEffect(() => {
     if (flowState === "CONFIRMED_EDITABLE" && countdown > 0) {
@@ -272,9 +277,7 @@ function FarmerFlow() {
   const crops = (reference.data?.crops ?? []) as any[];
   const selectedCrop = crops.find((c: any) => c.id === selectedCropId);
 
-  // The active selection might override AI
-  const activeOption = result?.options.find((o) => o.mandiId === selectedMandiId) || result?.best;
-  const isOverride = activeOption?.mandiId !== result?.best.mandiId;
+
 
   return (
     <div className="min-h-screen bg-background">

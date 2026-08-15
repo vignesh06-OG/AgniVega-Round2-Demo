@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const BASE_URL = "http://localhost:8081";
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:8084";
 
 async function loginAs(page: any, role: "farmer" | "driver" | "fleet" | "admin") {
   await page.goto(`${BASE_URL}/auth`);
@@ -42,6 +42,23 @@ test.describe("AgniVega Round2 - Production Browser Smoke Tests", () => {
     expect(reactErrors).toHaveLength(0);
   });
 
+  test("Farmer portal loads without ReferenceError (Initialization TDZ bug)", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") errors.push(msg.text());
+    });
+    
+    // Login and go to farmer portal
+    await loginAs(page, "farmer");
+    await page.waitForLoadState("networkidle");
+    
+    // Check for the specific activeOption initialization crash or cn crash
+    const refErrors = errors.filter(
+      (e) => e.includes("Cannot access 'activeOption' before initialization") || e.includes("cn is not defined") || e.includes("ReferenceError:")
+    );
+    expect(refErrors).toHaveLength(0);
+  });
+
   test("Auth page works and can login as farmer", async ({ page }) => {
     await page.goto(`${BASE_URL}/auth`);
     await page.waitForLoadState("networkidle");
@@ -57,7 +74,7 @@ test.describe("AgniVega Round2 - Production Browser Smoke Tests", () => {
   test("Farmer dashboard shows wallet, active bookings, and new dispatch", async ({ page }) => {
     await loginAs(page, "farmer");
     // Check wallet balance
-    await expect(page.getByText(/Wallet Balance|वॉलेट शिल्लक/)).toBeVisible();
+    await expect(page.getByText(/Wallet Balance|वॉलेट शिल्लक/).first()).toBeVisible();
     // Check active bookings section heading
     await expect(
       page.getByRole("heading", { name: /Active Bookings|सक्रिय बुकिंग/ }),
@@ -256,7 +273,7 @@ test.describe("AgniVega Round2 - Production Browser Smoke Tests", () => {
   test("Wallet shows ₹ and correct labels", async ({ page }) => {
     await loginAs(page, "farmer");
     // Check rupee symbol
-    await expect(page.getByText(/₹/)).toBeVisible();
+    await expect(page.getByText(/₹/).first()).toBeVisible();
     // Check "Estimated Net Amount" not engineering terms - appears in OPTIONS_READY state
     await clickNewDispatch(page);
     await page.fill('input[type="number"]', "10");
