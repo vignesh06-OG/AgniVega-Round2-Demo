@@ -23,6 +23,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   Scale,
@@ -101,7 +109,7 @@ const DICT = {
     dashboard: "Dashboard",
     newDispatch: "New Dispatch",
     activeBookings: "Active Bookings",
-    walletBalance: "Available Balance",
+    walletBalance: "Wallet Balance",
     reservedAmount: "Reserved",
     availableAfterReservation: "Available After Reservation",
     recentTransactions: "Recent Transactions",
@@ -203,6 +211,21 @@ function FarmerFlow() {
 
   // Countdown effect
   useEffect(() => {
+    // Phase 8: Strict state invalidation.
+    // If quantity or crop changes while results are displayed, we MUST clear them
+    // to prevent mathematically impossible allocations from surviving.
+    if (result && flowState !== "DRAFT" && flowState !== "CONFIRMED_EDITABLE" && flowState !== "LOCKED") {
+      setResult(null);
+      setFlowState("DRAFT");
+    }
+  }, [quantity, selectedCropId]);
+
+  const [consentModalOpen, setConsentModalOpen] = useState(false);
+  const [isPartialDispatch, setIsPartialDispatch] = useState(false);
+  const [totalAllocated, setTotalAllocated] = useState(0);
+
+  // Countdown effect
+  useEffect(() => {
     if (flowState === "CONFIRMED_EDITABLE" && countdown > 0) {
       const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
       return () => clearInterval(timer);
@@ -235,6 +258,66 @@ function FarmerFlow() {
     }
     return undefined;
   }, [flowState, countdown, lang, activeOption]);
+
+  const executeBooking = async () => {
+    if (!activeOption) return;
+    try {
+      setConsentModalOpen(false);
+      toast.loading(
+        lang === "en" ? "Reserving vehicle..." : "वाहन राखून ठेवत आहे...",
+        { id: "hold" },
+      );
+      const totalAllocated = activeOption.pooled.vehicles.reduce((s, v) => s + v.allocatedKg, 0);
+      const hold = await createHoldFn({
+        data: {
+          farmerId: "FARMER-123",
+          crop: selectedCropObj?.name_en || "Unknown",
+          quantityKg: totalAllocated, // MUST be the total allocated, NOT requested, to satisfy invariant
+          quality: aiResult,
+          destination: activeOption.mandiName,
+          vehicleAllocations: activeOption.pooled.vehicles.map((v) => ({
+            vehicleId: v.id,
+            quantityKg: v.allocatedKg,
+          })),
+          platformFee: Math.round(activeOption.pooled.platformFee),
+          expectedNetRealization: activeOption.pooled.netPayout,
+        },
+      });
+
+      const reservationAmount = Math.round(
+        activeOption.pooled.transportFee + activeOption.pooled.platformFee,
+      );
+      setWalletBalance((prev) => prev - reservationAmount);
+      setReservedAmount((prev) => prev + reservationAmount);
+      setTransactions((prev) => [
+        {
+          id: `tx-res-${Date.now()}`,
+          date: new Date().toISOString(),
+          desc: "Booking Reservation (Held)",
+          amount: -reservationAmount,
+          type: "debit",
+        },
+        ...prev,
+      ]);
+
+      setBookingRecord(hold);
+      const remaining = Math.max(0, Math.floor((hold.expiresAt - Date.now()) / 1000));
+      setCountdown(remaining);
+      setFlowState("CONFIRMED_EDITABLE");
+      toast.success(lang === "en" ? "Vehicle reserved!" : "वाहन राखीव!", {
+        id: "hold",
+      });
+    } catch (e: any) {
+      const msg =
+        e?.data?.message ||
+        e?.message ||
+        (typeof e === "string" ? e : null) ||
+        (lang === "en"
+          ? "Booking could not be confirmed. Please try again or select a different market."
+          : "बुकिंग निश्चित करता आली नाही. कृपया पुन्हा प्रयत्न करा.");
+      toast.error(msg, { id: "hold" });
+    }
+  };
 
   const handleCalculate = async () => {
     const q = Number(quantity);
@@ -775,17 +858,17 @@ function FarmerFlow() {
                           {result.weightKg.toLocaleString()} kg
                         </span>
                         <span className="text-sm font-semibold text-primary">
-                          {lang === "en" ? "Vehicles Required:" : "वाहने आवश्यक:"}{" "}
-                          {activeOption.pooled.vehicles.length}
+                          {activeOption.pooled.vehicles.reduce((sum, v) => sum + v.allocatedKg, 0).toLocaleString()} kg {lang === "en" ? "allocated across" : "साठी वाटप"} {activeOption.pooled.vehicles.length} {lang === "en" ? "vehicles" : "वाहने"}
                         </span>
                       </div>
 
                       {activeOption.pooled.vehicles.map((v, i) => (
                         <div key={i} className="bg-muted p-4 rounded-lg space-y-3 border">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="font-bold text-base">{v.name}</span>
-                            <Badge variant="outline" className="bg-background font-mono">
-                              {v.registrationNumber || `#${v.id.slice(0, 8)}`}
+                            <span className="font-bold text-base">Vehicle {i + 1}: {v.name}</span>
+                            {/* Privacy: Registration numbers are hidden before payment */}
+                            <Badge variant="outline" className="bg-background font-mono opacity-50">
+                              {lang === "en" ? "Number Hidden" : "नंबर लपविला"}
                             </Badge>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
@@ -849,61 +932,17 @@ function FarmerFlow() {
               <Button
                 size="lg"
                 className="flex-1"
-                onClick={async () => {
-                  try {
-                    toast.loading(
-                      lang === "en" ? "Reserving vehicle..." : "वाहन राखून ठेवत आहे...",
-                      { id: "hold" },
-                    );
-                    const hold = await createHoldFn({
-                      data: {
-                        farmerId: "FARMER-123",
-                        crop: selectedCropObj?.name_en || "Unknown",
-                        quantityKg: Number(quantity) * 100, // Convert quintals to kg
-                        quality: aiResult,
-                        destination: activeOption.mandiName,
-                        vehicleAllocations: activeOption.pooled.vehicles.map((v) => ({
-                          vehicleId: v.id,
-                          quantityKg: v.allocatedKg,
-                        })),
-                        platformFee: Math.round(activeOption.pooled.platformFee),
-                        expectedNetRealization: activeOption.pooled.netPayout,
-                      },
-                    });
-
-                    const reservationAmount = Math.round(
-                      activeOption.pooled.transportFee + activeOption.pooled.platformFee,
-                    );
-                    setWalletBalance((prev) => prev - reservationAmount);
-                    setReservedAmount((prev) => prev + reservationAmount);
-                    setTransactions((prev) => [
-                      {
-                        id: `tx-res-${Date.now()}`,
-                        date: new Date().toISOString(),
-                        desc: "Booking Reservation (Held)",
-                        amount: -reservationAmount,
-                        type: "debit",
-                      },
-                      ...prev,
-                    ]);
-
-                    setBookingRecord(hold);
-                    const remaining = Math.max(0, Math.floor((hold.expiresAt - Date.now()) / 1000));
-                    setCountdown(remaining);
-                    setFlowState("CONFIRMED_EDITABLE");
-                    toast.success(lang === "en" ? "Vehicle reserved!" : "वाहन राखीव!", {
-                      id: "hold",
-                    });
-                  } catch (e: any) {
-                    // Extract the most descriptive message from TanStack/server error wrappers
-                    const msg =
-                      e?.data?.message ||
-                      e?.message ||
-                      (typeof e === "string" ? e : null) ||
-                      (lang === "en"
-                        ? "Booking could not be confirmed. Please try again or select a different market."
-                        : "बुकिंग निश्चित करता आली नाही. कृपया पुन्हा प्रयत्न करा.");
-                    toast.error(msg, { id: "hold" });
+                onClick={() => {
+                  const reqKg = Number(quantity) * 100;
+                  const totalAlloc = activeOption.pooled.vehicles.reduce((s, v) => s + v.allocatedKg, 0);
+                  setTotalAllocated(totalAlloc);
+                  setIsPartialDispatch(totalAlloc < reqKg);
+                  
+                  // Phase 8: Intercept for consent modal
+                  if (activeOption.pooled.vehicles.length > 1 || totalAlloc < reqKg) {
+                    setConsentModalOpen(true);
+                  } else {
+                    executeBooking();
                   }
                 }}
               >
@@ -1075,6 +1114,54 @@ function FarmerFlow() {
           }}
         />
         <SupportTicketModal isOpen={supportOpen} onOpenChange={setSupportOpen} lang={lang} />
+        <Dialog open={consentModalOpen} onOpenChange={setConsentModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {lang === "en" ? "Multi-Vehicle / Partial Allocation" : "एकाधिक-वाहन / आंशिक वाटप"}
+              </DialogTitle>
+              <DialogDescription>
+                {isPartialDispatch
+                  ? (lang === "en" 
+                    ? `Your requested ${Number(quantity) * 100} kg exceeds current fleet capacity. The system can immediately allocate ${totalAllocated} kg across ${activeOption?.pooled.vehicles.length} vehicle(s).`
+                    : `तुमच्या विनंती केलेले ${Number(quantity) * 100} किलो सध्याच्या फ्लीट क्षमतेपेक्षा जास्त आहे. सिस्टम त्वरित ${totalAllocated} किलो वाटप करू शकते.`)
+                  : (lang === "en"
+                    ? `Your load of ${totalAllocated} kg requires multiple vehicles. Please confirm the split allocation below.`
+                    : `तुमच्या ${totalAllocated} किलो लोडसाठी एकाधिक वाहनांची आवश्यकता आहे. कृपया खालील वाटपाची पुष्टी करा.`)}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 my-4">
+              {activeOption?.pooled.vehicles.map((v, i) => (
+                <div key={v.id} className="bg-muted p-3 rounded-md flex justify-between items-center text-sm border">
+                  <div>
+                    <p className="font-semibold">Vehicle {i + 1}: {v.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-primary">{v.allocatedKg.toLocaleString()} kg</p>
+                  </div>
+                </div>
+              ))}
+              
+              <div className="flex justify-between items-center bg-primary/10 p-3 rounded-md text-sm font-semibold border border-primary/20">
+                <span>{lang === "en" ? "Total Allocated:" : "एकूण वाटप:"}</span>
+                <span className="text-primary">{totalAllocated.toLocaleString()} kg</span>
+              </div>
+            </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setConsentModalOpen(false)}>
+                {lang === "en" ? "Cancel & Go Back" : "रद्द करा आणि परत जा"}
+              </Button>
+              <Button onClick={() => {
+                setConsentModalOpen(false);
+                executeBooking();
+              }}>
+                {lang === "en" ? "Accept & Continue" : "स्वीकारा आणि सुरू ठेवा"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

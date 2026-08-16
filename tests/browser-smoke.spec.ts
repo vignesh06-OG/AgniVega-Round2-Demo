@@ -85,31 +85,23 @@ test.describe("AgniVega Round2 - Production Browser Smoke Tests", () => {
     ).toBeVisible();
   });
 
-  test("Multi-vehicle allocation: 60 quintals shows explicit breakdown", async ({ page }) => {
+  test("Multi-vehicle allocation: 120 quintals shows explicit breakdown", async ({ page }) => {
     await loginAs(page, "farmer");
-    // Click new dispatch
     await clickNewDispatch(page);
 
-    // Enter 60 quintals
-    await page.fill('input[type="number"]', "60");
+    // 120 quintals (12000 kg)
+    await page.fill('input[type="number"]', "120");
     await page.waitForTimeout(500);
 
     // Verify kg display updates
-    await expect(page.getByText(/6,000 kg/)).toBeVisible();
+    await expect(page.getByText(/12,000 kg/)).toBeVisible();
 
-    // Select crop (Onion) - click crop tile button
     await page.locator('button:has-text("Onion"), button:has-text("कांदा")').first().click();
-    await page.waitForTimeout(500);
-
-    // Complete AI upload flow: upload file -> wait -> save quality data
-    await page
-      .locator('input[type="file"]')
-      .first()
-      .setInputFiles({
-        name: "test.jpg",
-        mimeType: "image/jpeg",
-        buffer: Buffer.from("fake-image-data"),
-      });
+    await page.locator('input[type="file"]').first().setInputFiles({
+      name: "test.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.from("fake-image-data"),
+    });
     await page.waitForTimeout(1500); // wait for processing + upload
     await page.getByRole("button", { name: /Save Quality Data|माहिती जतन करा/ }).click();
     await page.waitForTimeout(500);
@@ -130,13 +122,26 @@ test.describe("AgniVega Round2 - Production Browser Smoke Tests", () => {
     const vehicleCards = page.locator(
       '.bg-muted:has-text("Max Capacity"), .bg-muted:has-text("वाहन क्षमता")',
     );
-    // Should have at least 2 vehicles for 6000kg
+    // Should have at least 2 vehicles for 12000kg
     const count = await vehicleCards.count();
-    expect(count).toBeGreaterThanOrEqual(1);
+    expect(count).toBeGreaterThanOrEqual(2);
 
-    // Verify allocated quantities sum to 6000 kg
+    // Verify registration numbers are hidden before payment
     const allocatedText = await page.locator("text=/Your Load|तुमचा लोड/").allTextContents();
     console.log("Allocated per vehicle:", allocatedText);
+
+    await expect(page.getByText(/Number Hidden|नंबर लपविला/).first()).toBeVisible();
+
+    // Verify consent modal for multi-vehicle
+    await page.getByRole("button", { name: /Hold Booking|बुकिंग होल्ड/ }).click();
+    await page.waitForTimeout(500);
+
+    // Consent modal should appear
+    await expect(page.getByText(/Multi-Vehicle \/ Partial Allocation|एकाधिक-वाहन \/ आंशिक वाटप/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /Accept & Continue|स्वीकारा आणि सुरू ठेवा/ })).toBeVisible();
+
+    // Cancel the modal to clean up state
+    await page.getByRole("button", { name: /Cancel & Go Back|रद्द करा आणि परत जा/ }).click();
   });
 
   test("Quantity state regression: 60 -> 20 -> 60 -> 35 -> 120 -> 12", async ({ page }) => {

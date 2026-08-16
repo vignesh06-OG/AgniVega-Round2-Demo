@@ -103,17 +103,8 @@ export function allocateVehicles(
 
   // If there's still remaining weight, it means we don't have enough capacity
   // in the available fleet for this specific route/pool.
-  // In a real app, this might fallback to on-demand un-pooled trucks or fail.
-  // For demo, we will just allocate the overflow to the largest truck to avoid blocking.
-  if (remaining > 0 && sorted.length > 0) {
-    const largest = sorted[0];
-    const existingAlloc = allocations.find((a) => a.instance.id === largest.id);
-    if (existingAlloc) {
-      existingAlloc.allocatedKg += remaining;
-    } else {
-      allocations.push({ instance: largest, allocatedKg: remaining });
-    }
-  }
+  // We will NOT over-allocate the overflow to the largest truck. We will return 
+  // exactly what we can safely accommodate. The UI and booking logic will handle partial dispatch.
 
   return allocations;
 }

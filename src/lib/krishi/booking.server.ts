@@ -88,6 +88,7 @@ export const createBookingHold = createServerFn({ method: "POST" })
     expireOldBookings();
 
     // Verify Capacity for all allocations
+    let sumAllocated = 0;
     for (const alloc of data.vehicleAllocations) {
       const cap = VEHICLE_CAPACITIES[alloc.vehicleId] || { total: 2500, booked: 0 };
       const remaining = cap.total - cap.booked;
@@ -96,6 +97,13 @@ export const createBookingHold = createServerFn({ method: "POST" })
           `Overbooking prevented. Only ${remaining.toLocaleString()} kg capacity remains on vehicle ${alloc.vehicleId}.`,
         );
       }
+      sumAllocated += alloc.quantityKg;
+    }
+
+    if (sumAllocated !== data.quantityKg) {
+      throw new Error(
+        `Allocation mismatch. Sum of vehicle allocations (${sumAllocated} kg) must exactly match the booking quantity (${data.quantityKg} kg).`
+      );
     }
 
     // Reserve Capacity
